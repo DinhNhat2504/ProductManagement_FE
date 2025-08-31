@@ -6,63 +6,68 @@ export const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [isCartLoading, setIsCartLoading] = useState(true);
-  const { isLoggedIn, userId } = useContext(AuthContext);
+  const { isLoggedIn, userId, token } = useContext(AuthContext);
 
-  // Load from localStorage when component mounts
+  // Tải giỏ hàng từ localStorage khi component khởi tạo
   useEffect(() => {
     const storedCart = localStorage.getItem('cart');
-    console.log('Initial load - Cart from localStorage:', storedCart);
+    console.log('Tải ban đầu - Giỏ hàng từ localStorage:', storedCart);
     if (storedCart) {
       try {
         const parsedCart = JSON.parse(storedCart);
         if (Array.isArray(parsedCart)) {
           setCart(parsedCart);
-          console.log('Cart loaded successfully:', parsedCart);
+          console.log('Tải giỏ hàng thành công:', parsedCart);
         } else {
-          console.warn('Parsed cart is not an array, resetting to empty:', parsedCart);
+          console.warn('Giỏ hàng không phải mảng, đặt lại rỗng:', parsedCart);
           setCart([]);
-          localStorage.setItem('cart', JSON.stringify([])); // Reset localStorage if invalid
+          localStorage.setItem('cart', JSON.stringify([]));
         }
       } catch (e) {
-        console.error('Error parsing localStorage cart, resetting:', e);
+        console.error('Lỗi khi phân tích giỏ hàng từ localStorage, đặt lại:', e);
         setCart([]);
-        localStorage.setItem('cart', JSON.stringify([])); // Reset if parse fails
+        localStorage.setItem('cart', JSON.stringify([]));
       }
     } else {
-      console.log('No cart data in localStorage, initializing empty');
-      localStorage.setItem('cart', JSON.stringify([])); // Initialize if null
+      console.log('Không có dữ liệu giỏ hàng trong localStorage, khởi tạo rỗng');
+      localStorage.setItem('cart', JSON.stringify([]));
     }
     setIsCartLoading(false);
   }, []);
 
-  // Sync cart with localStorage immediately if not logged in
+  // Đồng bộ giỏ hàng với localStorage nếu chưa đăng nhập
   useEffect(() => {
-    // Chỉ lưu vào localStorage nếu cart đã được load xong (không phải lần đầu)
     if (!isLoggedIn && cart.length > 0) {
       localStorage.setItem('cart', JSON.stringify(cart));
-      console.log('Cart saved to localStorage:', cart);
+      console.log('Lưu giỏ hàng vào localStorage:', cart);
     }
   }, [cart, isLoggedIn]);
 
-  // Sync with DB when logged in
+  // Đồng bộ với DB khi đăng nhập
   useEffect(() => {
-    if (isLoggedIn && userId) {
+    if (isLoggedIn && userId && token) {
       syncCartToDb();
     }
-  }, [isLoggedIn, userId]);
+  }, [isLoggedIn, userId, token]);
 
   const syncCartToDb = async () => {
     try {
-      console.log('Syncing cart to DB for userId:', userId);
-      const response = await fetch(`http://localhost:5000/api/cart?userId=${userId}`, {
+      console.log('Đồng bộ giỏ hàng với DB cho userId:', userId);
+      const response = await fetch(`https://localhost:7278/Cart/${userId}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
       });
       if (response.ok) {
-        const dbCart = await response.json();
+        const dbCartData = await response.json();
+        console.log('Dữ liệu từ API cart:', dbCartData); // Debug dữ liệu trả về
+        const dbCartItems = dbCartData?.items || [];
+
         const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-        const mergedCart = [...dbCart];
+        const mergedCart = [...dbCartItems];
         localCart.forEach((localItem) => {
           const existing = mergedCart.find((item) => item.productId === localItem.productId);
           if (!existing) {
@@ -72,57 +77,68 @@ export const CartProvider = ({ children }) => {
           }
         });
 
-        await fetch('http://localhost:5000/api/cart/update', {
+        await fetch(`https://localhost:7278/Cart/${userId}/items`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, cart: mergedCart }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ mergedCart }),
         });
 
         setCart(mergedCart);
-        localStorage.removeItem('cart'); // Remove only after successful sync
-        console.log('Cart synced to DB, localStorage cleared, new cart:', mergedCart);
+        localStorage.removeItem('cart');
+        console.log('Đồng bộ giỏ hàng với DB thành công, xóa localStorage, giỏ hàng mới:', mergedCart);
       } else {
-        console.warn('Failed to fetch cart from DB, keeping local data');
+        console.warn('Không thể lấy giỏ hàng từ DB, giữ dữ liệu local:', await response.json());
       }
     } catch (err) {
-      console.error('Error syncing cart to DB:', err);
+      console.error('Lỗi khi đồng bộ giỏ hàng với DB:', err);
     }
   };
 
-  const addToCart = async (productId, name, quantity , price) => {
-    const newItem = { productId, name, quantity, price };
-    if (isLoggedIn && userId) {
-      await fetch('http://localhost:5000/api/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, productId, name, quantity, price }),
-      });
-      const response = await fetch(`http://localhost:5000/api/cart?userId=${userId}`);
-      const updatedCart = await response.json();
-      setCart(updatedCart);
-      console.log('Added to cart (logged in), updated cart:', updatedCart);
-    } else {
-      setCart((prev) => {
-        const existing = prev.find((item) => item.productId === productId);
-        const newCart = existing
-          ? prev.map((item) =>
-              item.productId === productId ? { ...item, quantity: item.quantity + quantity } : item
-            )
-          : [...prev, newItem];
-        console.log('Added to cart (guest), new cart before save:', newCart);
-        localStorage.setItem('cart', JSON.stringify(newCart)); // Save immediately
-        return newCart;
-      });
-    }
-  };
+  const addToCart = async (productId, name, quantity, price, isUpdate = false) => {
+  const newItem = { productId, name, quantity, price };
+  if (isLoggedIn && userId && token) {
+    const method = isUpdate ? 'PUT' : 'POST';
+    await fetch(`https://localhost:7278/Cart/${userId}/items`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId, productId, name, quantity, price }),
+    });
+    const response = await fetch(`https://localhost:7278/Cart/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const updatedCartData = await response.json();
+    const updatedCart = updatedCartData?.items || [];
+    setCart(updatedCart);
+    console.log('Cập nhật/thêm vào giỏ hàng (đã đăng nhập), giỏ hàng mới:', updatedCart);
+  } else {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.productId === productId);
+      const newCart = existing
+        ? prev.map((item) =>
+            item.productId === productId ? { ...item, quantity: quantity } : item
+          )
+        : [...prev, newItem];
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      return newCart;
+    });
+  }
+};
 
-  // Thêm hàm updateQuantity và removeFromCart
   const updateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return;
-    const name = cart.find(item => item.productId === productId).name;
-    const quantityDiff = newQuantity - cart.find(item => item.productId === productId).quantity;
-    const price = quantityDiff * cart.find(item => item.productId === productId).price;
-    await addToCart(productId,name, quantityDiff , price); // Sử dụng addToCart để update (tăng/giảm)
+    const item = cart.find((item) => item.productId === productId);
+    if (!item) return;
+    const name = item.name;
+    const price = (newQuantity * item.price) / item.quantity;
+    await addToCart(productId, name, newQuantity, price , true);
   };
 
   const removeFromCart = async (productId) => {
@@ -131,11 +147,13 @@ export const CartProvider = ({ children }) => {
     if (!isLoggedIn) {
       localStorage.setItem('cart', JSON.stringify(updatedCart));
     } else {
-      // Cập nhật DB nếu logged in
-      await fetch('http://localhost:5000/api/cart/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, cart: updatedCart }),
+      await fetch(`https://localhost:7278/Cart/${userId}/items/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId, cart: { cartItems: updatedCart } }),
       });
     }
   };

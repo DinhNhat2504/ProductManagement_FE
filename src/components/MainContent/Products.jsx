@@ -16,12 +16,12 @@ function Products({ products }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {products.length > 0 ? (
           products.map((product) => (
-            <div className="w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl relative group">
+            <div className="w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl relative group" key={product.productId}>
               {product.imageURL && (
-                <div className="relative group">
+                <div className="relative group" >
                   <Link
                     to={`/products/${product.productId}`}
-                    key={product.productId}
+                    
                   >
                     <img
                       src={`https://localhost:7278${product.imageURL}`}
