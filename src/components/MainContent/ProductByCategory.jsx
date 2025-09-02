@@ -1,7 +1,7 @@
 import React from "react";
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import Products from "./Products";
+import ProductFilter from "./ProductFilter";
 
 export default function ProductByCategory() {
     const [products,setProducts] = useState();
@@ -28,9 +28,9 @@ export default function ProductByCategory() {
     if(loading) return <div className="text-center py-4">Đang tải...</div>;
     return (
         <>
-        <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-4">Sản phẩm {queryParams}</h1>
-      <Products products={products} />
+        <div className="w-full mx-auto">
+
+      <ProductFilter cateId={categoryId} isCategory={false}  />
     </div>
         </>
     )

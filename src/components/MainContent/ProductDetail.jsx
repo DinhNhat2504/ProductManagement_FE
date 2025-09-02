@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { AddToCartButton, BuyNowButton } from "./Button";
+import { AuthContext } from "../../context/AuthContext";
 
 const ProductDetail = () => {
   const { productId } = useParams();
@@ -9,8 +10,9 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-
+  const [reviewForm, setReviewForm] = useState({content: '', rating: 5 });
+  const [quantity, setQuantity] = useState(1);  
+  const { isLoggedIn, userId, token } = useContext(AuthContext);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -66,18 +68,56 @@ const ProductDetail = () => {
 
   const incrementQuantity = () => setQuantity(quantity + 1);
   const decrementQuantity = () => setQuantity(quantity > 1 ? quantity - 1 : 1);
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      setError('Vui lòng đăng nhập để gửi đánh giá!');
+      return;
+    }
 
+    try {
+      const response = await fetch(`https://localhost:7278/api/ProductReview/${productId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          productId,
+          comment: reviewForm.content,
+          rating: reviewForm.rating,
+        }),
+      });
+
+      if (response.ok) {
+        setReviewForm({ title: '', content: '', rating: 5 }); // Reset form
+        const newReview = await response.json();
+        setReviews((prev) => [...prev, newReview]); // Cập nhật danh sách review
+        setError(null);
+      } else {
+        setError('Gửi đánh giá thất bại. Vui lòng thử lại!');
+      }
+    } catch (err) {
+      setError('Lỗi khi gửi đánh giá: ' + err.message);
+    }
+  };
+
+  const handleReviewChange = (e) => {
+    const { name, value } = e.target;
+    setReviewForm((prev) => ({
+      ...prev,
+      [name]: name === 'rating' ? parseInt(value) : value,
+    }));
+  };
   return (
     <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
       <h2 className="text-4xl font-bold text-brown-700 mb-6 text-center">
         Chi tiết sản phẩm
       </h2>
-      <div className="flex flex-col md:flex-row gap-8 bg-white p-6 rounded-lg shadow-lg">
+      <div className="flex flex-col md:flex-row gap-8 bg-white p-6 rounded-lg shadow-lg bg-no-repeat">
         {product.imageURL && (
           <img
             src={`https://localhost:7278${product.imageURL}`}
             alt={product.name}
-            className="w-full md:w-1/2 h-96 object-cover rounded-lg shadow-md transition-transform hover:scale-105 object-center"
+            className="w-full md:w-2/5 h-full object-cover rounded-lg shadow-md transition-transform hover:scale-105 object-center"
             onError={(e) => {
               e.target.src = "/placeholder-image.jpg";
             }}
@@ -166,10 +206,8 @@ const ProductDetail = () => {
                       </p>
                     </div>
                   </div>
-                  <p className="text-gray-600 mt-3">{review.comment}</p>
-                  <p className="text-amber-500 mt-1">
-                    Đánh giá: {review.rating} / 5
-                  </p>
+                  <p className="text-gray-600">{review.comment}</p>
+              <p className="text-yellow-500">{'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)}</p>
                 </div>
               ))}
             </div>
@@ -185,6 +223,48 @@ const ProductDetail = () => {
         ) : (
           <p className="text-gray-500">Chưa có đánh giá nào.</p>
         )}
+      </div>
+      {/* Form nhập đánh giá */}
+      <div className="mt-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Viết đánh giá của bạn</h2>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <form onSubmit={handleReviewSubmit} className="space-y-4">
+          
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Nội dung</label>
+            <textarea
+              name="content"
+              value={reviewForm.content}
+              onChange={handleReviewChange}
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="4"
+              placeholder="Viết đánh giá của bạn..."
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Đánh giá (sao)</label>
+            <select
+              name="rating"
+              value={reviewForm.rating}
+              onChange={handleReviewChange}
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {[1, 2, 3, 4, 5].map((star) => (
+                <option key={star} value={star}>
+                  {star} sao
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition disabled:bg-gray-400"
+            disabled={!isLoggedIn}
+          >
+            Gửi đánh giá
+          </button>
+        </form>
       </div>
     </div>
   );

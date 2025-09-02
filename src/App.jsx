@@ -11,6 +11,7 @@ import Cart from './components/Cart.jsx';
 import CheckoutForm from './components/CheckoutForm.jsx';
 import Login from './components/MainContent/Login.jsx';
 import Register from './components/MainContent/Register.jsx';
+import ProductsPage from './components/MainContent/ProductsPage.jsx';
 
 function App() {
   
@@ -27,12 +28,14 @@ function App() {
             </>
           }
         />
+       
         <Route path="/products/category/:categoryId" element={<ProductByCategory />} />
         <Route path="/products/:productId" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<CheckoutForm />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Register />} /> 
+        <Route path="/products" element={<ProductsPage />} />
       </Routes>
       {/* Nút login để test (xóa sau khi có auth thực tế) */}
       
