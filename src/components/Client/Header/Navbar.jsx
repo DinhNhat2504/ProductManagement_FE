@@ -43,8 +43,8 @@ const Navbar = () => {
   return (
     <> {/* Sử dụng Fragment để chứa cả Navbar và Mobile Menu Overlay */}
       <nav className="bg-white shadow-md sticky top-0 z-30 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+        <div className="w-full mx-auto  sm:px-6 lg:px-8">
+          <div className="flex items-center justify-around h-20">
             
             <div className="flex-shrink-0">
               <Link to="/">

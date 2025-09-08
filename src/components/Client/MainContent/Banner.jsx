@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { banners } from '../../data';
+import { banners } from '../../../data';
 
 
 const Banner = () => {
@@ -13,7 +13,7 @@ const Banner = () => {
 
     return () => clearInterval(slideInterval);
   }, []);
-
+  
   return (
     <div className="w-full max-w-7xl mx-auto overflow-hidden relative h-[500px]">
       <div

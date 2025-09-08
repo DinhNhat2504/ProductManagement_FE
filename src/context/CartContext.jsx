@@ -123,7 +123,7 @@ export const CartProvider = ({ children }) => {
       const existing = prev.find((item) => item.productId === productId);
       const newCart = existing
         ? prev.map((item) =>
-            item.productId === productId ? { ...item, quantity: quantity } : item
+            item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
           )
         : [...prev, newItem];
       localStorage.setItem('cart', JSON.stringify(newCart));

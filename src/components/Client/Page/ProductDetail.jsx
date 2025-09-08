@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { AddToCartButton, BuyNowButton } from "./Button";
-import { AuthContext } from "../../context/AuthContext";
+import { AddToCartButton,BuyNowButton } from "../MainContent/Button";
+import { AuthContext } from "../../../context/AuthContext";
+import { FaStar } from 'react-icons/fa';
+import Products from "../MainContent/Products";
 
 const ProductDetail = () => {
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,6 +16,8 @@ const ProductDetail = () => {
   const [reviewForm, setReviewForm] = useState({content: '', rating: 5 });
   const [quantity, setQuantity] = useState(1);  
   const { isLoggedIn, userId, token } = useContext(AuthContext);
+  const [isOpen, setIsOpen] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -46,6 +51,12 @@ const ProductDetail = () => {
         console.log("Reviews data:", reviewsData);
         if (Array.isArray(reviewsData)) setReviews(reviewsData);
         else throw new Error("Dữ liệu review không phải là mảng");
+        const relatedResponse = await fetch(`https://localhost:7278/Product/${productId}/related`);
+        if (!relatedResponse.ok) throw new Error(`HTTP error related products! Status: ${relatedResponse.status}`);
+        const relatedData = await relatedResponse.json();
+        console.log("Related products data:", relatedData);
+        if (Array.isArray(relatedData)) setRelatedProducts(relatedData);
+        else throw new Error("Dữ liệu sản phẩm liên quan không phải là mảng");
         setLoading(false);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -107,6 +118,10 @@ const ProductDetail = () => {
       [name]: name === 'rating' ? parseInt(value) : value,
     }));
   };
+  const handleRatingChange = (star) => {
+    setReviewForm({ ...reviewForm, rating: star });
+  };
+
   return (
     <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
       <h2 className="text-4xl font-bold text-brown-700 mb-6 text-center">
@@ -225,46 +240,71 @@ const ProductDetail = () => {
         )}
       </div>
       {/* Form nhập đánh giá */}
-      <div className="mt-8 p-6 bg-gray-50 rounded-lg shadow-inner">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Viết đánh giá của bạn</h2>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <form onSubmit={handleReviewSubmit} className="space-y-4">
-          
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Nội dung</label>
-            <textarea
-              name="content"
-              value={reviewForm.content}
-              onChange={handleReviewChange}
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="4"
-              placeholder="Viết đánh giá của bạn..."
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Đánh giá (sao)</label>
-            <select
-              name="rating"
-              value={reviewForm.rating}
-              onChange={handleReviewChange}
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <div className="mt-10">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-xl font-bold text-red-500 mb-2 focus:outline-none"
+      >
+        Viết đánh giá của bạn
+      </button>
+
+      <div
+        className={`transition-all duration-500 ease-in-out overflow-hidden ${
+          isOpen ? 'max-h-[1000px] opacity-100 scale-100' : 'max-h-0 opacity-0 scale-95'
+        }`}
+      >
+        <div className="mt-2 p-6 bg-gray-50 rounded-lg shadow-inner">
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <form onSubmit={handleReviewSubmit} className="space-y-4">
+            <div>
+              <label className="block text-gray-700 font-semibold mb-1">Nội dung</label>
+              <textarea
+                name="content"
+                value={reviewForm.content}
+                onChange={handleReviewChange}
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="4"
+                placeholder="Viết đánh giá của bạn..."
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 font-semibold mb-1">Đánh giá (sao)</label>
+               <div className="flex gap-2">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => handleRatingChange(star)}
+          className="focus:outline-none"
+        >
+          <FaStar
+            className={`w-4 h-4 transition-colors duration-300 ${
+              star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+
+            </div>
+            <button
+              type="submit"
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition disabled:bg-gray-400"
+              disabled={!isLoggedIn}
             >
-              {[1, 2, 3, 4, 5].map((star) => (
-                <option key={star} value={star}>
-                  {star} sao
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition disabled:bg-gray-400"
-            disabled={!isLoggedIn}
-          >
-            Gửi đánh giá
-          </button>
-        </form>
+              Gửi đánh giá
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+      
+      {/* Section sản phẩm liên quan */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Sản phẩm liên quan</h2>
+        <Products products={relatedProducts} />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import ProductFilter from "./ProductFilter";
+import ProductFilter from "../MainContent/ProductFilter";
 
 export default function ProductsPage() {
   return (

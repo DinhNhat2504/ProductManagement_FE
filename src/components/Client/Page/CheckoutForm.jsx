@@ -1,8 +1,8 @@
 // src/components/CheckoutForm.jsx
 import React, { useState, useEffect,useContext } from "react";
 import { useLocation } from "react-router-dom";
-import { CartContext } from "../context/CartContext";
-import { AuthContext } from "../context/AuthContext";
+import { CartContext } from "../../../context/CartContext";
+import { AuthContext } from "../../../context/AuthContext";
 
 const CheckoutForm = () => {
   const [provinces, setProvinces] = useState([]);
@@ -266,7 +266,9 @@ const CheckoutForm = () => {
 }, [cartItems]);
  
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <>
+    <div className="flex w-full ">
+      <div className="w-[40%] mx-auto p-4 bg-white shadow-md rounded">
       <h2 className="text-2xl font-bold mb-4">Thanh Toán</h2>
       {/* Hiển thị sản phẩm */}
       <div className="mb-6">
@@ -280,7 +282,18 @@ const CheckoutForm = () => {
                 key={item.productId}
                 className="flex justify-between items-center border-b py-2"
               >
-                <span>{item.name || item.product?.name || "Sản phẩm"}</span>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={
+                      (item.imageURL && `https://localhost:7278${item.imageURL}`) ||
+                      (item.product?.imageURL && `https://localhost:7278${item.product?.imageURL}`) ||
+                      "/placeholder.png"
+                    }
+                    alt={item.name || item.product?.name || "Sản phẩm"}
+                    className="w-16 h-16 object-cover"
+                  />
+                  <span>{item.name || item.product?.name || "Sản phẩm"}</span>
+                </div>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => decreaseQuantity(item.productId)}
@@ -349,6 +362,7 @@ const CheckoutForm = () => {
             required
           />
         </div>
+        <div className="flex items-center gap-2 ">
         <div>
           <label className="block text-sm font-medium">Tỉnh/Thành Phố</label>
           <select
@@ -399,6 +413,7 @@ const CheckoutForm = () => {
             ))}
           </select>
         </div>
+        </div>
         <div>
           <label className="block text-sm font-medium">Địa Chỉ Chi Tiết</label>
           <input
@@ -436,6 +451,22 @@ const CheckoutForm = () => {
         </button>
       </form>
     </div>
+    <div className="w-[40%] p-2 bg-white shadow-md rounded  m-4">
+      <h2 className="text-center">Đơn hàng</h2>
+      <h3 className="">Họ tên: {customerName}</h3>
+      <h3 className="">Email: {customerEmail}</h3>
+      <h3 className="">Số Điện Thoại: {customerPhone}</h3>
+      <h3 className="">Địa Chỉ: {address}, {wards.find(
+        (w) => w.code === parseInt(selectedWard)
+      )?.name}, {districts.find(
+        (d) => d.code === parseInt(selectedDistrict)
+      )?.name}, {provinces.find(
+        (p) => p.code === parseInt(selectedProvince)
+      )?.name} </h3>
+    </div>
+    </div>
+    
+    </>
   );
 };
 

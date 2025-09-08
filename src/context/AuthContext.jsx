@@ -7,38 +7,53 @@ export const AuthProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
+  const [role, setRole] = useState(null);
 
   // Kiểm tra token đã lưu khi component khởi tạo
    useEffect(() => {
+  const validateToken = async () => {
     const storedToken = localStorage.getItem("token");
     const storedUserId = localStorage.getItem("userId");
     const storedUserDetails = localStorage.getItem("userDetails");
+
     if (storedToken && storedUserId) {
-      // Gọi API xác thực token
-      fetch("https://localhost:7278/api/User/validate-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: storedToken }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.valid) {
-            setToken(storedToken);
-            setUserId(storedUserId);
-            setIsLoggedIn(true);
-            if (storedUserDetails) {
-              setUserDetails(JSON.parse(storedUserDetails));
-            }
-          } else {
-            setToken(null);
-            setUserId(null);
-            setIsLoggedIn(false);
-            localStorage.removeItem("token");
-            localStorage.removeItem("userId");
-          }
+      try {
+        const response = await fetch("https://localhost:7278/api/User/validate-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: storedToken }),
         });
+
+        const data = await response.json();
+
+        if (data.valid) {
+          setToken(storedToken);
+          setUserId(storedUserId);
+          setIsLoggedIn(true);
+          if (storedUserDetails) {
+            const user = JSON.parse(storedUserDetails);
+              setUserDetails(user);
+              setRole(user.roleId);
+          }
+        } else {
+          setToken(null);
+          setUserId(null);
+          setIsLoggedIn(false);
+          setRole(null);
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+        }
+      } catch (error) {
+        console.error("Lỗi xác thực token:", error);
+        setToken(null);
+        setUserId(null);
+        setIsLoggedIn(false);
+      }
     }
-  }, []);
+  };
+
+  validateToken();
+}, []);
   const register = async (firstName, lastName, email, password, roleId = 1) => {
     try {
       const response = await fetch('https://localhost:7278/api/User/register', {
@@ -48,30 +63,20 @@ export const AuthProvider = ({ children }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // API trả về { token, user: { userId, firstName, lastName, email, avatarUrl, address, phoneNumber } }
         setToken(data.token);
         setUserId(data.user.userId);
-        setUserDetails({
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          email: data.user.email,
-          avatarUrl: data.user.avatarUrl,
-          address: data.user.address,
-          phoneNumber: data.user.phoneNumber,
-        });
+        setUserDetails(data.user);
+        setRole(data.user.roleId); // Lưu role
         setIsLoggedIn(true);
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user.userId);
         localStorage.setItem('userDetails', JSON.stringify(data.user));
-        console.log('Đăng ký thành công:', data);
         return { success: true, data };
       } else {
         const error = await response.json();
-        console.error('Đăng ký thất bại:', error);
         return { success: false, error };
       }
     } catch (err) {
-      console.error('Lỗi khi đăng ký:', err);
       return { success: false, error: err.message };
     }
   };
@@ -85,30 +90,20 @@ export const AuthProvider = ({ children }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // API trả về { token, user: { userId, firstName, lastName, email, avatarUrl, address, phoneNumber } }
         setToken(data.token);
         setUserId(data.user.userId);
-        setUserDetails({
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          email: data.user.email,
-          avatarUrl: data.user.avatarUrl,
-          address: data.user.address,
-          phoneNumber: data.user.phoneNumber,
-        });
+        setUserDetails(data.user);
+        setRole(data.user.roleId); // Lưu role
         setIsLoggedIn(true);
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user.userId);
         localStorage.setItem('userDetails', JSON.stringify(data.user));
-        console.log('Đăng nhập thành công:', data);
         return { success: true, data };
       } else {
         const error = await response.json();
-        console.error('Đăng nhập thất bại:', error);
         return { success: false, error };
       }
     } catch (err) {
-      console.error('Lỗi khi đăng nhập:', err);
       return { success: false, error: err.message };
     }
   };
@@ -117,16 +112,15 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUserId(null);
     setUserDetails(null);
+    setRole(null); // Xóa role
     setIsLoggedIn(false);
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('userDetails');
-    console.log('Đã đăng xuất');
   };
 
-  // Kiểm tra token còn hợp lệ (đơn giản hóa, giả sử backend xử lý thời hạn token)
   const isTokenValid = () => {
-    return !!token; // Trong ứng dụng thực tế, kiểm tra thời hạn token qua JWT payload
+    return !!token;
   };
 
   return (
@@ -136,6 +130,7 @@ export const AuthProvider = ({ children }) => {
         userId,
         token,
         userDetails,
+        role, 
         register,
         login,
         logout,
