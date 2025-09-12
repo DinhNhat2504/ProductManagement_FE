@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }) => {
           setIsLoggedIn(false);
           setRole(null);
           localStorage.removeItem("token");
+          
           localStorage.removeItem("userId");
         }
       } catch (error) {
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }) => {
 
   validateToken();
 }, []);
-  const register = async (firstName, lastName, email, password, roleId = 1) => {
+  const register = async (firstName, lastName, email, password, roleId = 2) => {
     try {
       const response = await fetch('https://localhost:7278/api/User/register', {
         method: 'POST',
@@ -116,6 +117,8 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(false);
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
+    localStorage.removeItem("cart");
+
     localStorage.removeItem('userDetails');
   };
 

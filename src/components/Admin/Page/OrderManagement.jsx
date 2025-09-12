@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext , useLayoutEffect} from 'react';
 import { AuthContext } from "../../../context/AuthContext";
 import { FaShoppingCart, FaEdit } from 'react-icons/fa';
 
@@ -140,7 +140,7 @@ const OrderManagement = () => {
     setSearchTerm(search); // Reset về trang 1 khi tìm kiếm
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  // if (loading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="p-6">

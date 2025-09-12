@@ -15,7 +15,7 @@ const Banner = () => {
   }, []);
   
   return (
-    <div className="w-full max-w-7xl mx-auto overflow-hidden relative h-[500px]">
+    <div className="w-full  mx-auto overflow-hidden relative h-[500px]">
       <div
         className="flex transition-transform duration-500 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -38,13 +38,13 @@ const Banner = () => {
       <div className="absolute top-1/2 left-0 right-0 flex justify-between px-4 transform -translate-y-1/2">
         <button
           onClick={() => setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length)}
-          className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-600"
+          className=" text-white p-2 rounded-full hover:bg-gray-600"
         >
           ❮
         </button>
         <button
           onClick={() => setCurrentSlide((prev) => (prev + 1) % banners.length)}
-          className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-600"
+          className=" text-white p-2 rounded-full hover:bg-gray-600"
         >
           ❯
         </button>

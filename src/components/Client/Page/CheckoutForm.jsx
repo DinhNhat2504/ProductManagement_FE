@@ -182,7 +182,7 @@ const CheckoutForm = () => {
     }
 
     const orderData = {
-      userId: useri  ? parseInt(localStorage.getItem("userId")) : null, // Lấy userId từ token nếu đã đăng nhập
+      userId: userId  ? parseInt(localStorage.getItem("userId")) : null, // Lấy userId từ token nếu đã đăng nhập
       customerName,
       customerEmail,
       customerPhone,
@@ -197,17 +197,16 @@ const CheckoutForm = () => {
         (d) => d.code === parseInt(selectedDistrict)
       )?.name,
       shippingWard: wards.find((w) => w.code === parseInt(selectedWard))?.name,
-      paymentId: paymentMethods.find(
-        (method) => method === parseInt(selectedPaymentMethod)
-      )
-        ? 1
-        : null,
+      paymentId: selectedPaymentMethod, 
+        
       orderItems: cartItems.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
         price: item.price * item.quantity,
       })),
     };
+    console.log(selectedPaymentMethod);
+    console.log(orderData.paymentId);
     // Kiểm tra orderItems
     if (
       orderData.orderItems.length === 0 ||
@@ -234,7 +233,7 @@ const CheckoutForm = () => {
       // Xóa sản phẩm đã thanh toán khỏi giỏ hàng
       if (isAuthenticated) {
         // Gọi API xóa giỏ hàng từ backend
-        await fetch("https://your-backend-api/api/cart", {
+        await fetch(`https://localhost:7278/Cart/${userId}/clear`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });

@@ -206,7 +206,7 @@ const UserManagement = () => {
                         className="p-1 text-red-600 transition duration-150 ease-in-out hover:text-red-800"
                         title="Xóa"
                       >
-                        <FaTrash className="inline h-4 w-4" />
+                        <FaTrash className="inline h-4 w-4" /> 
                       </button>
                     </td>
                   </tr>
