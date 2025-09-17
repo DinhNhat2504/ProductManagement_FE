@@ -143,12 +143,17 @@ const ProductDetail = () => {
             {product.name}
           </h3>
           <p className="text-gray-600">{product.summary}</p>
-          <p className="text-2xl font-bold text-amber-600 mt-2">
-            {product.price.toLocaleString("vi-VN")} VND
-          </p>
+          <div className="flex items-center gap-4 mb-4">
+            <span className="text-xl font-bold text-red-500 mt-2">
+              {product.price.toLocaleString("vi-VN")}₫
+            </span>
+            <span className="text-sm text-gray-500 mt-2 line-through">
+              {(product.price + product.price * 0.1).toLocaleString("vi-VN")}₫
+            </span>
+          </div>
           <p className="text-gray-700">{product.description}</p>
           {product.isFeatured && (
-            <span className="inline-block bg-amber-200 text-amber-800 text-sm px-3 py-1 rounded-full">
+            <span className="inline-block bg-red-200 text-red-800 text-sm px-3 py-1 rounded-full">
               Nổi bật
             </span>
           )}
@@ -157,14 +162,14 @@ const ProductDetail = () => {
           <div className="flex items-center gap-4 mt-4">
             <button
               onClick={decrementQuantity}
-              className="w-10 h-10 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors"
+              className="w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
             >
               -
             </button>
             <span className="text-xl font-medium">{quantity}</span>
             <button
               onClick={incrementQuantity}
-              className="w-10 h-10 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors"
+              className="w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
             >
               +
             </button>
@@ -175,14 +180,15 @@ const ProductDetail = () => {
             <AddToCartButton
               product={product}
               quantity={quantity}
-              classCustom="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all shadow-md hover:shadow-lg"
+              classCustom="relative px-6 py-3 text-sm text-red-500 overflow-hidden group border-2 border-red-500 rounded-md "
+              isIcon={false}
             >
               Thêm vào giỏ hàng
             </AddToCartButton>
             <BuyNowButton
               product={product}
               quantity={quantity}
-              classCustom="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all shadow-md hover:shadow-lg"
+              classCustom="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-md hover:shadow-lg"
             >
               Mua ngay
             </BuyNowButton>
@@ -229,7 +235,7 @@ const ProductDetail = () => {
             {reviews.length > 4 && (
               <button
                 onClick={() => setShowAllReviews(!showAllReviews)}
-                className="mt-6 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all"
+                className="mt-6 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
               >
                 {showAllReviews ? "Ẩn bớt" : "Xem thêm"}
               </button>

@@ -43,7 +43,7 @@ const AvatarNav = () => {
         {isLoggedIn ? (
           <>
             <Link
-              to={`/profile/${userId}`}
+              to={`/profile`}
               className="relative block px-4 py-2 text-sm text-gray-700 overflow-hidden group"
             >
               <span className="absolute inset-0 bg-red-500 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-in-out"></span>
@@ -52,12 +52,12 @@ const AvatarNav = () => {
               </span>
             </Link>
             <Link
-              to="/settings"
+              to="/orders"
               className="relative block px-4 py-2 text-sm text-gray-700 overflow-hidden group"
             >
               <span className="absolute inset-0 bg-red-500 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-in-out"></span>
               <span className="relative z-10 transition-colors duration-350 ease-in-out group-hover:text-white">
-                Cài đặt
+                Xem đơn hàng
               </span>
             </Link>
 

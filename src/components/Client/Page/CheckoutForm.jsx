@@ -231,12 +231,13 @@ const CheckoutForm = () => {
       console.log("Đơn hàng đã tạo:", data);
 
       // Xóa sản phẩm đã thanh toán khỏi giỏ hàng
-      if (isAuthenticated) {
+      if (isLoggedIn) {
         // Gọi API xóa giỏ hàng từ backend
         await fetch(`https://localhost:7278/Cart/${userId}/clear`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+        
       } else {
         const remainingItems = cartItems.filter(
           (item) =>

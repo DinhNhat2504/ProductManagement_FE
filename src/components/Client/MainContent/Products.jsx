@@ -91,7 +91,7 @@ function Products({ products, isCarousel, grid }) {
             {product.summary}
           </p>
           <div className="flex items-center gap-4 mb-4">
-            <span className="text-sm font-bold text-green-600 mt-2">
+            <span className="text-sm font-bold text-red-500 mt-2">
               {product.price.toLocaleString("vi-VN")}₫
             </span>
             <span className="text-sm text-gray-500 mt-2 line-through">
@@ -135,10 +135,10 @@ function Products({ products, isCarousel, grid }) {
       <div
   className={
     isCarousel
-      ? "w-full"
+      ? "w-full bg-indigo-600 rounded-lg"
       : grid
-      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-5 gap-2"
-      : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-5 gap-2"
+      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-5 gap-2 "
+      : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-5 gap-2 "
   }
 >
 

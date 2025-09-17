@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FiShoppingCart, FiUser, FiMenu, FiX } from "react-icons/fi";
 import CartNav from "./CartNav";
 import AvatarNav from "./AvatarNav";
+import SearchBar from "./SearchBar";
 
 const Navbar = () => {
   const [categories, setCategories] = useState([]);
@@ -63,18 +64,18 @@ const Navbar = () => {
               {/* ... Nội dung menu desktop giữ nguyên ... */}
               <Link
                 to="/"
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
+                className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
               >
                 Trang chủ
               </Link>
               <Link
                 to="/products"
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
+                className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
               >
                 Sản phẩm
               </Link>
               <div className="relative group">
-                <button className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out flex items-center">
+                <button className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out flex items-center">
                   Danh mục
                   <svg
                     className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:rotate-180"
@@ -97,7 +98,7 @@ const Navbar = () => {
                         key={category.categoryId}
                         to={`/products/category/${category.categoryId}`}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block px-4 py-2 text-sm hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200"
+                        className="block px-4 py-2 text-sm hover:bg-gray-100 hover:text-red-500 transition-colors duration-200"
                       >
                         <span>{category.name}</span>
                       </Link>
@@ -107,20 +108,22 @@ const Navbar = () => {
               </div>
               <Link
                 to="/blog"
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
+                className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
               >
                 Blog
               </Link>
               <Link
                 to="/about"
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
+                className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
               >
                 Về chúng tôi
               </Link>
             </div>
 
             <div className="hidden md:flex items-center ">
-              {/* <Link to="/cart" className="text-gray-500 hover:text-indigo-600 transition duration-150 ease-in-out"><FiShoppingCart size={24} /></Link> */}
+              {/* <Link to="/cart" className="text-gray-500 hover:text-red-500 transition duration-150 ease-in-out"><FiShoppingCart size={24} /></Link> */}
+               <SearchBar />
+               <div className="m-2"></div>
               <CartNav />
               <div className="m-2"></div>
               <AvatarNav />
@@ -134,6 +137,7 @@ const Navbar = () => {
               >
                 <FiMenu size={26} />
               </button>
+              <SearchBar/>
               <CartNav />
             </div>
           </div>
@@ -168,14 +172,14 @@ const Navbar = () => {
         <div className="space-y-4">
           <Link
             to="/"
-            className="block text-gray-700 hover:text-indigo-600 py-2 text-lg"
+            className="block text-gray-700 hover:text-red-500 py-2 text-lg"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Trang chủ
           </Link>
           <Link
             to="/products"
-            className="block text-gray-700 hover:text-indigo-600 py-2 text-lg"
+            className="block text-gray-700 hover:text-red-500 py-2 text-lg"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Sản phẩm
@@ -184,7 +188,7 @@ const Navbar = () => {
           <div>
             <button
               onClick={() => setIsMobileCategoryOpen(!isMobileCategoryOpen)}
-              className="w-full text-left text-gray-700 hover:text-indigo-600 py-2 text-lg flex justify-between items-center"
+              className="w-full text-left text-gray-700 hover:text-red-500 py-2 text-lg flex justify-between items-center"
             >
               Danh mục
               <svg
@@ -204,7 +208,7 @@ const Navbar = () => {
                   <Link
                     key={category.categoryId}
                     to={`/products/category/${category.categoryId}`}
-                    className="block px-4 py-2 text-sm hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200"
+                    className="block px-4 py-2 text-sm hover:bg-gray-100 hover:text-red-500 transition-colors duration-200"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {category.name}
@@ -216,14 +220,14 @@ const Navbar = () => {
 
           <Link
             to="/blog"
-            className="block text-gray-700 hover:text-indigo-600 py-2 text-lg"
+            className="block text-gray-700 hover:text-red-500 py-2 text-lg"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Blog
           </Link>
           <Link
             to="/about"
-            className="block text-gray-700 hover:text-indigo-600 py-2 text-lg"
+            className="block text-gray-700 hover:text-red-500 py-2 text-lg"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Về chúng tôi
@@ -232,7 +236,7 @@ const Navbar = () => {
           <div className="border-t border-gray-200 pt-6 space-y-4">
             <Link
               to="/cart"
-              className="flex items-center text-gray-700 hover:text-indigo-600"
+              className="flex items-center text-gray-700 hover:text-red-500"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <FiShoppingCart size={22} />
@@ -240,7 +244,7 @@ const Navbar = () => {
             </Link>
             <Link
               to="/profile"
-              className="flex items-center text-gray-700 hover:text-indigo-600"
+              className="flex items-center text-gray-700 hover:text-red-500"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <FiUser size={22} />

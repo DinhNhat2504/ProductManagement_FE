@@ -17,6 +17,10 @@ import samsung from "../src/assets/logo/samsung_logo.png";
 import xiaomi from "../src/assets/logo/xiaomi_logo.png";
 import oppo from "../src/assets/logo/oppo_logo.png";
 import LogoLoop from "../src/components/Client/MainContent/LogoLoop";
+import OrderConfirmation from "../src/components/Client/Page/OrderConfirmation";
+import OrdersPage from "../src/components/Client/Page/OrdersPage";
+import Chatbot from "../src/components/Client/Page/Chatbot";
+import UserProfile from "../src/components/Client/Page/UserProfile";
 
 const ClientRoutes = () => {
   const imageLogos = [
@@ -64,9 +68,13 @@ const ClientRoutes = () => {
         <Route path="/products/:productId" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<CheckoutForm />} />
-
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/order/confirm" element={<OrderConfirmation />} />
+        
         <Route path="/products" element={<ProductsPage />} />
       </Routes>
+      <Chatbot/>
     </>
   );
 };

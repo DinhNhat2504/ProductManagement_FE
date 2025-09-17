@@ -140,7 +140,7 @@ export const CartProvider = ({ children }) => {
         const existing = prev.find((item) => item.productId === productId);
         const newCart = existing
           ? prev.map((item) =>
-              item.productId === productId ? { ...item, quantity } : item
+              item.productId === productId ? { ...item, quantity : item.quantity + quantity } : item
             )
           : [...prev, newItem];
         if (!isLoggedIn) {
@@ -156,9 +156,8 @@ export const CartProvider = ({ children }) => {
     const item = cart.find((item) => item.productId === productId);
     if (!item) return;
     const { name, price } = item;
-    await addToCart(productId, name, newQuantity, price, true);
+    await addToCart(productId, name, newQuantity - item.quantity, price, true); // Tính delta quantity để cộng thêm (nếu giảm, delta âm - nhưng backend cần hỗ trợ giảm)
   };
-
   const removeFromCart = async (productId) => {
     const updatedCart = cart.filter((item) => item.productId !== productId);
     setCart(updatedCart);
