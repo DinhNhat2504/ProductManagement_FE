@@ -21,6 +21,7 @@ import OrderConfirmation from "../src/components/Client/Page/OrderConfirmation";
 import OrdersPage from "../src/components/Client/Page/OrdersPage";
 import Chatbot from "../src/components/Client/Page/Chatbot";
 import UserProfile from "../src/components/Client/Page/UserProfile";
+import ChatWidget from "../src/components/Client/Page/ChatWidget";
 
 const ClientRoutes = () => {
   const imageLogos = [
@@ -75,6 +76,7 @@ const ClientRoutes = () => {
         <Route path="/products" element={<ProductsPage />} />
       </Routes>
       <Chatbot/>
+      <ChatWidget/>
     </>
   );
 };

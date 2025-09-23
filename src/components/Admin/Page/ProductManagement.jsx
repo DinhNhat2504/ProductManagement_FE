@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../../context/AuthContext";
-import { FaBox, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import {
+  FaBox,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaWarehouse,
+  FaInfoCircle,
+} from "react-icons/fa";
 
 const ProductManagement = () => {
   const { token } = useContext(AuthContext);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
-
-  const [isOpen, setIsOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     productId: null,
@@ -28,6 +35,17 @@ const ProductManagement = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [search, setSearch] = useState("");
   const pageSize = 10;
+
+  // New states for import modal
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importProductId, setImportProductId] = useState(null);
+  const [importQuantity, setImportQuantity] = useState(0);
+  const [importNote, setImportNote] = useState("");
+
+  // New states for transactions modal
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [transactionsProductId, setTransactionsProductId] = useState(null);
+  const [transactions, setTransactions] = useState([]);
 
   // Lấy danh sách sản phẩm
   const fetchProducts = async () => {
@@ -59,6 +77,36 @@ const ProductManagement = () => {
       setLoading(false);
     }
   };
+
+  // Lấy số lượng cho từng sản phẩm
+  const fetchQuantities = async (productsList) => {
+    const quantitiesData = {};
+    await Promise.all(
+      productsList.map(async (product) => {
+        try {
+          const response = await fetch(
+            `https://localhost:7278/Stock/${product.productId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            quantitiesData[product.productId] = data.quantity || 0;
+          } else {
+            quantitiesData[product.productId] = "N/A";
+          }
+        } catch (error) {
+          quantitiesData[product.productId] = "N/A";
+        }
+      })
+    );
+    setQuantities(quantitiesData);
+  };
+
   // Lấy danh sách danh mục
   const fetchCategories = async () => {
     try {
@@ -84,6 +132,12 @@ const ProductManagement = () => {
     fetchProducts();
     fetchCategories();
   }, [token, page, search]);
+
+  useEffect(() => {
+    if (products.length > 0) {
+      fetchQuantities(products);
+    }
+  }, [products, token]);
 
   // Xử lý chọn ảnh và tạo preview
   const handleImageChange = (e) => {
@@ -133,12 +187,12 @@ const ProductManagement = () => {
       formDataToSend.append("description", formData.description || "");
       formDataToSend.append("isFeatured", formData.isFeatured);
       if (imageFile) {
-        formDataToSend.append("imageFile", imageFile); // Gửi file ảnh
-      } else if (formData.imageURL && !editingProduct) {
-        formDataToSend.append("imageURL", formData.imageURL); // Giữ URL cũ cho thêm mới
+        formDataToSend.append("image", imageFile); // Gửi file ảnh
+      } else if (formData.imageURL) {
+        formDataToSend.append("imageURL", formData.imageURL); // Giữ URL cũ
       }
 
-      console.log("Sending formData:", Object.fromEntries(formDataToSend)); // Debug: Kiểm tra dữ liệu gửi đi
+      console.log("Sending formData:", Object.fromEntries(formDataToSend)); // Debug
 
       const url = editingProduct
         ? `https://localhost:7278/Product/${editingProduct.productId}`
@@ -149,7 +203,6 @@ const ProductManagement = () => {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
-          // Không đặt 'Content-Type' để FormData tự xử lý
         },
         body: formDataToSend,
       });
@@ -157,7 +210,7 @@ const ProductManagement = () => {
       if (response.ok) {
         await fetchProducts();
         setPage(1);
-        setIsOpen(false);
+        setShowModal(false);
         setEditingProduct(null);
         setFormData({
           productId: null,
@@ -209,6 +262,67 @@ const ProductManagement = () => {
     }
   };
 
+  // Nhập kho
+  const openImportModal = (productId) => {
+    setImportProductId(productId);
+    setImportQuantity(0);
+    setImportNote("");
+    setShowImportModal(true);
+  };
+
+  const handleImportSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("https://localhost:7278/Stock/import", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: importProductId,
+          quantityChanged: parseInt(importQuantity),
+          note: importNote,
+        }),
+      });
+      if (response.ok) {
+        await fetchProducts(); // Làm mới danh sách
+        setShowImportModal(false);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Nhập kho thất bại");
+      }
+    } catch (error) {
+      setError("Lỗi khi nhập kho: " + error.message);
+    }
+  };
+
+  // Chi tiết nhập kho
+  const openTransactionsModal = async (productId) => {
+    try {
+      const response = await fetch(
+        `https://localhost:7278/Stock/${productId}/transactions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data || []);
+        setTransactionsProductId(productId);
+        setShowTransactionsModal(true);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Không thể tải chi tiết giao dịch");
+      }
+    } catch (error) {
+      setError("Lỗi khi tải chi tiết giao dịch: " + error.message);
+    }
+  };
+
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
@@ -226,8 +340,7 @@ const ProductManagement = () => {
     );
     setImageFile(null);
     setError("");
-
-    setIsOpen(true);
+    setShowModal(true);
   };
 
   const handleSearch = (e) => {
@@ -239,7 +352,7 @@ const ProductManagement = () => {
 
   return (
     <div className="p-6">
-      <div className="rounded-xl bg-white p-4 shadow-lg sm:p-6 relative">
+      <div className="rounded-xl bg-white p-4 shadow-lg sm:p-6">
         <div className="mb-6 flex flex-col justify-between border-b pb-4 sm:flex-row sm:items-center">
           <h3 className="mb-3 text-lg font-semibold text-gray-700 sm:mb-0 sm:text-xl flex items-center">
             <FaBox className="mr-2" /> Danh sách sản phẩm
@@ -263,7 +376,7 @@ const ProductManagement = () => {
             </button>
           </form>
         </div>
-        <div className="mb-6  items-start justify-between pb-4 sm:flex-row sm:items-center">
+        <div className="mb-6 flex flex-col items-start justify-between pb-4 sm:flex-row sm:items-center">
           <button
             onClick={() => {
               setEditingProduct(null);
@@ -280,162 +393,12 @@ const ProductManagement = () => {
               setImageFile(null);
               setImagePreview("");
               setError("");
-
-              setIsOpen(true);
+              setShowModal(true);
             }}
             className="flex w-full items-center justify-center space-x-2 rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white shadow transition duration-200 ease-in-out hover:bg-blue-700 hover:shadow-md sm:w-auto"
           >
             <FaPlus className="h-4 w-4" /> <span>Thêm sản phẩm</span>
           </button>
-          <div className="absolute top-10 left-0 right-0 z-10 mx-auto w-full max-w-3xl px-4 sm:px-6">
-            <div
-              className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                isOpen
-                  ? "max-h-[1000px] opacity-100 scale-100"
-                  : "max-h-0 opacity-0 scale-95"
-              }`}
-            >
-              <div className="mt-2 p-6 bg-gray-50 rounded-lg shadow-inner">
-                {error && <p className="text-red-500 mb-4">{error}</p>}
-                <h3 className="text-xl font-bold mb-4">
-                  {editingProduct ? "Sửa sản phẩm" : "Thêm sản phẩm"}
-                </h3>
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium">Tên</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full border p-2 rounded"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium">Giá</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        value={formData.price}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0.01;
-                          setFormData({
-                            ...formData,
-                            price: value >= 0.01 ? value : 0.01,
-                          });
-                        }}
-                        className="w-full border p-2 rounded"
-                        required
-                      />
-                    </div>
-                    <div className="">
-                      <label className="block text-sm font-medium">
-                        Danh mục
-                      </label>
-                      <select
-                        value={formData.categoryId}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            categoryId: e.target.value,
-                          })
-                        }
-                        className="w-full border p-2 rounded"
-                        required
-                      >
-                        <option value="">Chọn danh mục</option>
-                        {categories.map((cat) => (
-                          <option key={cat.categoryId} value={cat.categoryId}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium">Tóm tắt</label>
-                    <textarea
-                      value={formData.summary}
-                      onChange={(e) =>
-                        setFormData({ ...formData, summary: e.target.value })
-                      }
-                      className="w-full border p-2 rounded"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium">Mô tả</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                      className="w-full border p-2 rounded"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium">
-                      Ảnh sản phẩm
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png"
-                      onChange={handleImageChange}
-                      className="w-full border p-2 rounded"
-                    />
-                    {imagePreview && (
-                      <div className="mt-2">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="h-20 w-20 rounded object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        checked={formData.isFeatured}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            isFeatured: e.target.checked,
-                          })
-                        }
-                      />
-                      Nổi bật
-                    </label>
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                      }}
-                      className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-blue-500 text-white px-4 py-2 rounded"
-                    >
-                      Lưu
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Thông báo lỗi */}
@@ -460,6 +423,9 @@ const ProductManagement = () => {
                 </th>
                 <th className="hidden px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:table-cell">
                   Nổi bật
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  Số lượng
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                   Hành động
@@ -500,6 +466,11 @@ const ProductManagement = () => {
                       {product.isFeatured ? "Có" : "Không"}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
+                    {quantities[product.productId] !== undefined
+                      ? quantities[product.productId]
+                      : "Loading..."}
+                  </td>
                   <td className="space-x-2 px-4 py-3 text-center text-sm font-medium whitespace-nowrap">
                     <button
                       onClick={() => handleEdit(product)}
@@ -507,6 +478,20 @@ const ProductManagement = () => {
                       title="Sửa"
                     >
                       <FaEdit className="inline h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => openImportModal(product.productId)}
+                      className="p-1 text-green-600 transition duration-150 ease-in-out hover:text-green-800"
+                      title="Nhập kho"
+                    >
+                      <FaWarehouse className="inline h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => openTransactionsModal(product.productId)}
+                      className="p-1 text-purple-600 transition duration-150 ease-in-out hover:text-purple-800"
+                      title="Chi tiết nhập kho"
+                    >
+                      <FaInfoCircle className="inline h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(product.productId)}
@@ -563,6 +548,257 @@ const ProductManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal thêm/sửa sản phẩm */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">
+              {editingProduct ? "Sửa sản phẩm" : "Thêm sản phẩm"}
+            </h3>
+            {error && <div className="mb-4 text-red-500">{error}</div>}
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Tên</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full border p-2 rounded"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Giá</label>
+                <input
+                
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.price}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0.01;
+                    setFormData({
+                      ...formData,
+                      price: value >= 0.01 ? value : 0.01,
+                    });
+                  }}
+                  className="w-full border p-2 rounded"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Danh mục</label>
+                <select
+                  value={formData.categoryId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, categoryId: e.target.value })
+                  }
+                  className="w-full border p-2 rounded"
+                  required
+                >
+                  <option value="">Chọn danh mục</option>
+                  {categories.map((cat) => (
+                    <option key={cat.categoryId} value={cat.categoryId}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Tóm tắt</label>
+                <textarea
+                  value={formData.summary}
+                  onChange={(e) =>
+                    setFormData({ ...formData, summary: e.target.value })
+                  }
+                  className="w-full border p-2 rounded"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Mô tả</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full border p-2 rounded"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">
+                  Ảnh sản phẩm
+                </label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png"
+                  onChange={handleImageChange}
+                  className="w-full border p-2 rounded"
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-20 w-20 rounded object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={formData.isFeatured}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isFeatured: e.target.checked })
+                    }
+                  />
+                  Nổi bật
+                </label>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingProduct(null);
+                    setFormData({
+                      productId: null,
+                      name: "",
+                      price: 0.01,
+                      categoryId: "",
+                      summary: "",
+                      description: "",
+                      imageURL: "",
+                      isFeatured: false,
+                    });
+                    setImageFile(null);
+                    setImagePreview("");
+                    setError("");
+                  }}
+                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                  Lưu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nhập kho */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Nhập kho</h3>
+            {error && <div className="mb-4 text-red-500">{error}</div>}
+            <form onSubmit={handleImportSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Số lượng</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={importQuantity}
+                  onChange={(e) => setImportQuantity(e.target.value)}
+                  className="w-full border p-2 rounded"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Ghi chú</label>
+                <textarea
+                  value={importNote}
+                  onChange={(e) => setImportNote(e.target.value)}
+                  className="w-full border p-2 rounded"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                  Lưu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chi tiết nhập kho */}
+      {showTransactionsModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Chi tiết nhập/xuất kho</h3>
+            {error && <div className="mb-4 text-red-500">{error}</div>}
+            <div className="overflow-x-auto max-h-64">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                      Nhập/Xuất
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                      Số lượng thay đổi
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                      Ngày
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                      Ghi chú
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {transactions.map((transaction) => (
+                    <tr key={transaction.transactionId}>
+
+                      <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
+                        {(transaction.isImport ? "Nhập" : "Xuất" )}
+                      </td>
+                      <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
+                        {transaction.quantityChanged}
+                      </td>
+                      <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
+                        {new Date(transaction.transactionDate).toLocaleString()}
+                      </td>
+
+                      <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
+                        {transaction.note}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => setShowTransactionsModal(false)}
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

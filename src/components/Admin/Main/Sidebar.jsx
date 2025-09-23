@@ -1,13 +1,29 @@
 import React, { useState, useContext } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext';
-import { FaTachometerAlt, FaBox, FaShoppingCart, FaUsers, FaUserCircle, FaBars, FaTimes, FaRocket } from 'react-icons/fa';
+import {
+  FiBarChart,
+  FiChevronDown,
+  FiChevronsRight,
+  FiDollarSign,
+  FiHome,
+  FiMonitor,
+  FiShoppingCart,
+  FiGift,
+  FiUsers,
+  FiMessageSquare
+} from "react-icons/fi";
+import { SidebarProvider } from './SidebarContext';
+import { useSidebar } from "./SidebarContext";
+
+import { AnimatePresence, motion } from "framer-motion";
 
 const Sidebar = () => {
   const { logout, role, userDetails } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    // const [open, setOpen] = useState(true);
+    const { open,setOpen,toggleSidebar  } = useSidebar();
+  const [selected, setSelected] = useState("Dashboard");
 
   // Chỉ hiển thị sidebar cho admin
   if (role !== 1) {
@@ -16,101 +32,212 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login'); 
   };
 
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-    setIsUserMenuOpen(false); // Đóng menu người dùng khi toggle
-  };
-
-  const toggleUserMenu = () => {
-    setIsUserMenuOpen(!isUserMenuOpen);
-  };
-
-  // Danh sách các mục điều hướng
-  const navItems = [
-    { to: '/admin', label: 'Dashboard', icon: FaTachometerAlt },
-    { to: '/admin/products', label: 'Products', icon: FaBox },
-    { to: '/admin/orders', label: 'Orders', icon: FaShoppingCart },
-    { to: '/admin/users', label: 'Users', icon: FaUsers },
-  ];
+   
 
   return (
-    <div
-      className={`${
-        isCollapsed ? 'w-16' : 'w-64'
-      } h-screen bg-gradient-to-b from-teal-900 to-teal-700 text-white p-4 fixed top-0 left-0 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-lg`}
+    <motion.nav
+      layout
+      className="sticky top-0 h-screen shrink-0 border-r border-slate-300 bg-white p-2"
+      style={{
+        width: open ? "225px" : "fit-content",
+      }}
     >
-      {/* Header với Logo */}
-      <div className="flex items-center justify-between mb-6">
+      <TitleSection open={open} />
+
+      <div className="space-y-1">
+        <Option
+          Icon={FiHome}
+          title="Trang chủ"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          link="/admin"
+        />
+        <Option
+          Icon={FiMessageSquare}
+          title="Trò chuyện"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          notifs={3}
+link="/admin/chats"
+
+        />
+        <Option
+          Icon={FiMonitor}
+          title="View Site"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+        />
+        <Option
+          Icon={FiShoppingCart}
+          title="Sản phẩm"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          link="/admin/products"
+        />
+        <Option
+          Icon={FiDollarSign}
+          title="Đơn hàng"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          link="/admin/orders"
+        />
+        <Option
+          Icon={FiUsers}
+          title="Người dùng"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          link="/admin/users"
+        />
+        <Option
+          Icon={FiBarChart}
+          title="Thống kê"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          link="/admin/statics"
+        />
+        
+      </div>
+
+      <ToggleClose open={open} toggleSidebar={toggleSidebar} />
+    </motion.nav>
+  );
+};
+const Option = ({ Icon, title, selected, setSelected, open, notifs , link }) => {
+  return (
+    <Link to={link}>
+    <motion.button
+      layout
+      onClick={() => setSelected(title)}
+      className={`relative flex h-10 w-full items-center rounded-md transition-colors ${selected === title ? "bg-indigo-100 text-indigo-800" : "text-slate-500 hover:bg-slate-100"}`}
+    >
+      <motion.div
+        layout
+        className="grid h-full w-10 place-content-center text-lg"
+      >
+        <Link to={link}><Icon /> </Link>
+           
+      </motion.div>
+      {open && (
+        <motion.span
+          layout
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.125 }}
+          className=""
+        >
+           <Link to={link}>{title}</Link>
+        </motion.span>
+      )}
+
+      {notifs && open && (
+        <motion.span
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          style={{ y: "-50%" }}
+          transition={{ delay: 0.5 }}
+          className="absolute right-2 top-1/2 size-4 rounded bg-indigo-500 text-xs text-white"
+        >
+          {notifs}
+        </motion.span>
+      )}
+      
+    </motion.button></Link>
+  );
+};
+const TitleSection = ({ open }) => {
+  return (
+    <div className="mb-3 border-b border-slate-300 pb-3">
+      <div className="flex cursor-pointer items-center justify-between rounded-md transition-colors hover:bg-slate-100">
         <div className="flex items-center gap-2">
-         
-          {!isCollapsed && (
-            <span className="text-xl font-bold tracking-tight">Admin Panel</span>
+          <Logo />
+          {open && (
+            <motion.div
+              layout
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.125 }}
+            >
+              <span className="block text-xs font-semibold">NTech</span>
+              <span className="block text-xs text-slate-500">N Ecosystem - Technology</span>
+            </motion.div>
           )}
         </div>
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-colors duration-200"
-        >
-          {isCollapsed ? <FaBars size={20} /> : <FaTimes size={20} />}
-        </button>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex items-center gap-2 p-2 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-teal-500 text-white shadow-sm'
-                  : 'text-teal-100 hover:bg-teal-600 hover:text-white'
-              }`
-            }
-            title={isCollapsed ? item.label : ''}
-          >
-            <item.icon className="w-5 h-5" />
-            {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* User Avatar với Dropdown */}
-      <div className="mt-auto">
-        <button
-          onClick={toggleUserMenu}
-          className="flex items-center gap-2 p-2 rounded-lg w-full text-teal-100 hover:bg-teal-600 hover:text-white transition-all duration-200"
-        >
-          <FaUserCircle className="w-5 h-5" />
-          {!isCollapsed && (
-            <span className="text-sm font-medium">
-              {userDetails?.firstName} {userDetails?.lastName}
-            </span>
-          )}
-        </button>
-        {isUserMenuOpen && !isCollapsed && (
-          <div className="mt-2 bg-teal-800 rounded-lg shadow-lg p-3 w-full">
-            <div className="mb-2">
-              <p className="text-sm font-medium text-teal-100">
-                {userDetails?.firstName} {userDetails?.lastName}
-              </p>
-              <p className="text-xs text-teal-300">{userDetails?.email}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 p-2 rounded-lg w-full text-teal-100 hover:bg-red-600 hover:text-white transition-all duration-200"
-            >
-              <FaUserCircle className="w-5 h-5" />
-              <span className="text-sm">Logout</span>
-            </button>
-          </div>
-        )}
+        {open && <FiChevronDown className="mr-2" />}
       </div>
     </div>
+  );
+};
+const Logo = () => {
+  // Temp logo from https://logoipsum.com/
+  return (
+    <motion.div
+      layout
+      className="grid size-10 shrink-0 place-content-center rounded-md bg-indigo-600"
+    >
+      <svg
+        width="24"
+        height="auto"
+        viewBox="0 0 50 39"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="fill-slate-50"
+      >
+        <path
+          d="M16.4992 2H37.5808L22.0816 24.9729H1L16.4992 2Z"
+          stopColor="#000000"
+        ></path>
+        <path
+          d="M17.4224 27.102L11.4192 36H33.5008L49 13.0271H32.7024L23.2064 27.102H17.4224Z"
+          stopColor="#000000"
+        ></path>
+      </svg>
+    </motion.div>
+  );
+};
+const ToggleClose = ({ open, toggleSidebar  }) => {
+  return (
+
+    <motion.button
+      layout
+      onClick={toggleSidebar}
+      className="absolute bottom-0 left-0 right-0 border-t border-slate-300 transition-colors hover:bg-slate-100"
+    >
+      <div className="flex items-center p-2">
+        <motion.div
+          layout
+          className="grid size-10 place-content-center text-lg"
+        >
+          <FiChevronsRight
+            className={`transition-transform ${open && "rotate-180"}`}
+          />
+        </motion.div>
+        
+        {open && (
+          <motion.span
+            layout
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.125 }}
+            className="text-xs font-medium"
+          >
+            Hide
+          </motion.span>
+        )}
+      </div>
+    </motion.button>
   );
 };
 

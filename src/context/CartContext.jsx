@@ -98,6 +98,7 @@ export const CartProvider = ({ children }) => {
 
   // Fetch giỏ hàng từ DB
   const fetchCartFromDb = async () => {
+    console.log('Gọi fetchCartFromDb');
     try {
       const response = await fetch(`https://localhost:7278/Cart/${userId}`, {
         headers: {
@@ -176,7 +177,7 @@ export const CartProvider = ({ children }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQuantity, removeFromCart, isCartLoading }}>
+    <CartContext.Provider value={{ cart, addToCart, updateQuantity, removeFromCart, isCartLoading, fetchCartFromDb}}>
       {children}
     </CartContext.Provider>
   );

@@ -19,8 +19,12 @@ const CheckoutForm = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const { isLoggedIn, userId, token } = useContext(AuthContext);
-  const { cart } = useContext(CartContext);
+  const { cart , fetchCartFromDb} = useContext(CartContext);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [vouchers, setVouchers] = useState([]);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [voucherError, setVoucherError] = useState("");
   const location = useLocation();
 
   // Lấy dữ liệu từ "Mua ngay"
@@ -73,7 +77,7 @@ const CheckoutForm = () => {
   };
 
   fetchCartAndBuyNow();
-}, [isLoggedIn, buyNowItem]);
+}, [cart,isLoggedIn, buyNowItem]);
   // Lấy danh sách tỉnh/thành phố
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -186,7 +190,9 @@ const CheckoutForm = () => {
       customerName,
       customerEmail,
       customerPhone,
-      voucherId: null, // Giả sử không có voucher
+      voucherId: vouchers.find(
+        (p) => p.code === (voucherCode)
+      )?.voucherId, // Giả sử không có voucher
       orderStatusId: 1, // Giả sử 1 là trạng thái "Pending"
       totalPrice,
       shippingAddress: address,
@@ -206,6 +212,7 @@ const CheckoutForm = () => {
       })),
     };
     console.log(selectedPaymentMethod);
+    console.log("Id voucher :"+ orderData.voucherId)
     console.log(orderData.paymentId);
     // Kiểm tra orderItems
     if (
@@ -237,7 +244,7 @@ const CheckoutForm = () => {
           method: "DELETE",
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        
+        if (typeof fetchCartFromDb === "function") await fetchCartFromDb();
       } else {
         const remainingItems = cartItems.filter(
           (item) =>
@@ -264,7 +271,62 @@ const CheckoutForm = () => {
   );
   setTotalPrice(total);
 }, [cartItems]);
- 
+ useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const response = await fetch("https://localhost:7278/Voucher", {
+          headers: { "Authorization": `Bearer ${token || ""}` },
+        });
+        if (!response.ok) throw new Error("Lỗi khi lấy danh sách voucher");
+        const data = await response.json();
+        setVouchers(data);
+      } catch (error) {
+        console.error("Lỗi khi fetch voucher:", error);
+      }
+    };
+    fetchVouchers();
+  }, [vouchers,token]);
+
+  const applyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError("Vui lòng nhập mã voucher!");
+      return;
+    }
+
+    const voucher = vouchers.find(v => v.code.toUpperCase() === voucherCode.toUpperCase());
+    if (!voucher) {
+      setVoucherError("Mã voucher không hợp lệ!");
+      return;
+    }
+
+    // Kiểm tra điều kiện sử dụng
+    const currentDate = new Date();
+    if (new Date(voucher.endDate) < currentDate) {
+      setVoucherError("Mã voucher đã hết hạn!");
+      return;
+    }
+    if (voucher.currentUsage >= voucher.maxUsage) {
+      setVoucherError("Mã voucher đã hết lượt sử dụng!");
+      return;
+    }
+    if (voucher.conditions > totalPrice) {
+      setVoucherError(`Đơn hàng chưa đủ giá trị tối thiểu: ${voucher.conditions.toLocaleString('vi-VN')} VND`);
+      return;
+    }
+
+    // Tính giảm giá
+    let discount = 0;
+    if (voucher.discountType === "%") {
+      discount = (totalPrice * voucher.discountValue) / 100;
+    } else if (voucher.discountType === "₫") {
+      discount = voucher.discountValue;
+    }
+    discount = Math.min(discount, totalPrice); // Không giảm quá tổng giá
+
+    setDiscountAmount(discount);
+    setTotalPrice(totalPrice - discount);
+    setVoucherError(""); // Cập nhật totalPrice với giảm giá
+  };
   return (
     <>
     <div className="flex w-full ">
@@ -332,6 +394,28 @@ const CheckoutForm = () => {
         )}
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="mt-4">
+          <label className="block text-sm font-medium">Mã giảm giá</label>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={voucherCode}
+              onChange={(e) => setVoucherCode(e.target.value)}
+              placeholder="Nhập mã voucher"
+              className="w-full p-2 border rounded"
+            />
+            <button
+              onClick={applyVoucher}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            > 
+              Áp dụng
+            </button>
+          </div>
+          {voucherError && <p className="text-red-500 text-sm mt-1">{voucherError}</p>}
+          {discountAmount > 0 && (
+            <p className="text-green-600 mt-2">Giảm giá: -{discountAmount.toLocaleString('vi-VN')} VND</p>
+          )}
+        </div>
         <div>
           <label className="block text-sm font-medium">Họ và Tên</label>
           <input
