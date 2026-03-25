@@ -1,8 +1,8 @@
 import React, { useContext } from "react";
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
 import { FiCreditCard, FiMail, FiUser, FiUsers } from "react-icons/fi";
 import { motion } from "framer-motion";
-import { useSidebar } from "../Main/SidebarContext";
+import { useSidebar } from "../../components/Admin/Main/SidebarContext";
 
 const Dashboard = () => {
   const { userDetails } = useContext(AuthContext);
@@ -72,3 +72,4 @@ const Card = ({ title, subtitle, Icon, href }) => {
   );
 };
 export default Dashboard;
+

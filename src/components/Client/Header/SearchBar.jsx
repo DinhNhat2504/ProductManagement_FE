@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FiX, FiSearch } from "react-icons/fi";
+import api from "../../../utils/api";
+import { getImageUrl } from "../../../utils/helpers";
 
 const SearchBar = ({ onClose }) => {
   const [query, setQuery] = useState(""); // Từ khóa tìm kiếm
@@ -17,15 +19,8 @@ const SearchBar = ({ onClose }) => {
     }
 
     try {
-      const response = await fetch(
-        `https://localhost:7278/Product/search?query=${encodeURIComponent(
-          searchQuery
-        )}`
-      );
-      if (!response.ok) {
-        throw new Error("Lỗi khi gọi API");
-      }
-      const data = await response.json();
+      const response = await api.get(`/Product/search?query=${encodeURIComponent(searchQuery)}`);
+      const data = response.data;
       setResults(data);
       setShowDropdown(true);
     } catch (error) {
@@ -119,7 +114,7 @@ const SearchBar = ({ onClose }) => {
                         }}
                       >
                         <img
-                          src={`https://localhost:7278${product.imageURL}`}
+                          src={getImageUrl(product.imageURL)}
                           alt={product.name}
                           className="w-12 h-12 object-cover rounded mr-3"
                         />

@@ -1,4 +1,4 @@
-import { SidebarProvider, useSidebar } from "../Main/SidebarContext";
+import { SidebarProvider, useSidebar } from "../../components/Admin/Main/SidebarContext";
 import { motion } from "framer-motion";
 import Dashboard from "./DashBoard";
 import ProductManagement from "./ProductManagement";
@@ -7,7 +7,7 @@ import UserManagement from "./UserManagement";
 import { Route, Routes } from "react-router-dom";
 import StatisticsPage from "./StatisticsPage";
 
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
 import ChatAdminDashboard from "./ChatAdminDashboard";
 const MainRoute = () => {
   const { open } = useSidebar();
@@ -41,3 +41,4 @@ const MainRoute = () => {
   );
 };
 export default MainRoute;
+

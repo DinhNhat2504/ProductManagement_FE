@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { ChatBubbleLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import ChatMessages from '../../Admin/Main/ChatMessages';
-import { AuthContext } from '../../../context/AuthContext';
+import ChatMessages from '../../components/Admin/Main/ChatMessages';
+import { AuthContext } from '../../context/AuthContext';
+import api from '../../utils/api';
+
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7278';
 
 const ChatWidget = () => {
   const { userId, role } = useContext(AuthContext);
@@ -17,7 +20,7 @@ const ChatWidget = () => {
   useEffect(() => {
     const initConnection = async () => {
       const conn = new HubConnectionBuilder()
-        .withUrl('https://localhost:7278/chathub', {
+        .withUrl(`${baseURL}/chathub`, {
           accessTokenFactory: () => localStorage.getItem('token'),
         })
         .configureLogging(LogLevel.Information)
@@ -39,16 +42,11 @@ const ChatWidget = () => {
   const handleOpenChat = async () => {
     if (!isOpen && userId) {
       try {
-        const response = await fetch('https://localhost:7278/Chat/get-or-create-room', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ customerId: userId, adminId: 5 }),
-        });
-        if (!response.ok) throw new Error('Failed to create/get room');
-        const room = await response.json();
+        const response = await api.post('/Chat/get-or-create-room',
+          { customerId: userId, adminId: 13 },
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        const room = response.data;
         setChatRoomId(room.chatRoomId);
         setIsOpen(true);
       } catch (err) {

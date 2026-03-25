@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
-import debounce from 'lodash/debounce'; // Đã cài: npm i lodash
+import api from '../../../utils/api';
 
 const ChatMessages = ({ chatRoomId, userId, connection, isAdmin }) => {
   const [messages, setMessages] = useState([]);
@@ -12,12 +12,10 @@ const ChatMessages = ({ chatRoomId, userId, connection, isAdmin }) => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const response = await fetch(`https://localhost:7278/Chat/messages/${chatRoomId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        const response = await api.get(`/Chat/messages/${chatRoomId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        if (!response.ok) throw new Error('Failed to fetch messages');
-        const msgs = await response.json();
-        setMessages(msgs);
+        setMessages(response.data);
       } catch (err) {
         console.error('Error fetching messages:', err);
       }
@@ -44,7 +42,7 @@ const ChatMessages = ({ chatRoomId, userId, connection, isAdmin }) => {
       const handleReceiveMessage = (senderId, content, sentAt) => {
         console.log('Received message:', { senderId, content, sentAt }); // Debug
         if (chatRoomId) {
-          const validSentAt = new Date(sentAt).toISOString() || new Date().toISOString();
+          const validSentAt = sentAt ? new Date(sentAt).toISOString() : new Date().toISOString();
           setMessages((prev) => {
             const isDuplicate = prev.some(
               (msg) => msg.content === content && msg.sentAt === validSentAt
@@ -73,57 +71,47 @@ const ChatMessages = ({ chatRoomId, userId, connection, isAdmin }) => {
   // Đánh dấu tin nhắn đã đọc
   useEffect(() => {
     const markAsRead = async () => {
-      for (const msg of messages) {
-        if (!msg.isRead && msg.senderId !== userId) {
-          try {
-            await fetch(`https://localhost:7278/Chat/read/${msg.messageId}`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            });
-          } catch (err) {
-            console.error('Error marking message as read:', err);
-          }
-        }
+      const markPromises = messages
+        .filter((msg) => !msg.isRead && msg.senderId !== userId)
+        .map((msg) =>
+          api.post(`/Chat/read/${msg.messageId}`, {}, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          }).catch((err) => console.error('Error marking message as read:', err))
+        );
+      
+      if (markPromises.length > 0) {
+        await Promise.all(markPromises);
       }
     };
 
     markAsRead();
   }, [messages, userId]);
 
-  // Gửi tin nhắn với debounce và kiểm tra trạng thái
-  const handleSendMessage = debounce(async () => {
-  if (!newMessage.trim() || !connection || isSending) return;
+  // Gửi tin nhắn với kiểm tra trạng thái
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !connection || isSending) return;
 
-  setIsSending(true);
-  const sentAt = new Date().toISOString();
-  try {
-    const response = await fetch('https://localhost:7278/Chat/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({
+    setIsSending(true);
+    const sentAt = new Date().toISOString();
+    try {
+      await api.post('/Chat/send', {
         chatRoomId,
         senderId: userId,
         content: newMessage,
         sentAt,
         isRead: false,
-      }),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API error: ${response.status} - ${errorText}`);
-    }
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
 
-    // KHÔNG tự thêm tin nhắn vào state, chỉ chờ sự kiện ReceiveMessage từ SignalR
-    setNewMessage('');
-  } catch (err) {
-    console.error('Error sending message:', err.message, err.stack);
-  } finally {
-    setIsSending(false);
-  }
-}, 1000); // Giữ debounce 1000ms
+      // KHÔNG tự thêm tin nhắn vào state, chỉ chờ sự kiện ReceiveMessage từ SignalR
+      setNewMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err.message, err.stack);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-white">

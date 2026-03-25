@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
+import api from "../../utils/api";
 import {
   FaBox,
   FaPlus,
@@ -22,11 +23,13 @@ const ProductManagement = () => {
     name: "",
     price: 0.01,
     categoryId: "",
+    brandId: "",
     summary: "",
     description: "",
     imageURL: "",
     isFeatured: false,
   });
+  const [categoryBrands, setCategoryBrands] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
@@ -51,28 +54,17 @@ const ProductManagement = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://localhost:7278/Product/paged?pageNumber=${page}&pageSize=${pageSize}&searchTerm=${encodeURIComponent(
-          search
-        )}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const response = await api.get(
+        `/Product/paged?pageNumber=${page}&pageSize=${pageSize}&searchTerm=${encodeURIComponent(search)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.items || []);
-        setTotalPages(data.totalPages || 1);
-        setTotalItems(data.totalItems || 0);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Không thể tải danh sách sản phẩm");
-      }
+      const data = response.data;
+      setProducts(data.items || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalItems(data.totalItems || 0);
     } catch (error) {
-      setError("Lỗi khi tải sản phẩm: " + error.message);
+       const errorMessage = error.response?.data?.message || "Lỗi khi tải sản phẩm";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -84,21 +76,11 @@ const ProductManagement = () => {
     await Promise.all(
       productsList.map(async (product) => {
         try {
-          const response = await fetch(
-            `https://localhost:7278/Stock/${product.productId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          if (response.ok) {
-            const data = await response.json();
-            quantitiesData[product.productId] = data.quantity || 0;
-          } else {
-            quantitiesData[product.productId] = "N/A";
-          }
+          const response = await api.get(`/Stock/${product.productId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = response.data;
+          quantitiesData[product.productId] = data.quantity || 0;
         } catch (error) {
           quantitiesData[product.productId] = "N/A";
         }
@@ -110,21 +92,13 @@ const ProductManagement = () => {
   // Lấy danh sách danh mục
   const fetchCategories = async () => {
     try {
-      const response = await fetch("https://localhost:7278/Category", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      const response = await api.get("/Category", {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data || []);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Không thể tải danh sách danh mục");
-      }
+      setCategories(response.data || []);
     } catch (error) {
-      setError("Lỗi khi tải danh mục: " + error.message);
+      const errorMessage = error.response?.data?.message || "Lỗi khi tải danh mục";
+      setError(errorMessage);
     }
   };
 
@@ -138,6 +112,22 @@ const ProductManagement = () => {
       fetchQuantities(products);
     }
   }, [products, token]);
+
+  // Fetch brands when categoryId changes
+  useEffect(() => {
+    if (formData.categoryId) {
+      api.get(`/Category/${formData.categoryId}/brands`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => setCategoryBrands(res.data || []))
+      .catch(err => {
+        console.error("Lỗi khi tải thương hiệu theo danh mục:", err);
+        setCategoryBrands([]);
+      });
+    } else {
+      setCategoryBrands([]);
+    }
+  }, [formData.categoryId, token]);
 
   // Xử lý chọn ảnh và tạo preview
   const handleImageChange = (e) => {
@@ -183,6 +173,9 @@ const ProductManagement = () => {
       formDataToSend.append("name", formData.name.trim());
       formDataToSend.append("price", priceValue);
       formDataToSend.append("categoryId", parseInt(formData.categoryId));
+      if (formData.brandId) {
+        formDataToSend.append("brandId", parseInt(formData.brandId));
+      }
       formDataToSend.append("summary", formData.summary || "");
       formDataToSend.append("description", formData.description || "");
       formDataToSend.append("isFeatured", formData.isFeatured);
@@ -194,71 +187,47 @@ const ProductManagement = () => {
 
       console.log("Sending formData:", Object.fromEntries(formDataToSend)); // Debug
 
-      const url = editingProduct
-        ? `https://localhost:7278/Product/${editingProduct.productId}`
-        : "https://localhost:7278/Product";
-      const method = editingProduct ? "PUT" : "POST";
+      const _url = editingProduct ? `/Product/${editingProduct.productId}` : "/Product";
+      const _method = editingProduct ? "put" : "post";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
+      await api[_method](_url, formDataToSend, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.ok) {
-        await fetchProducts();
-        setPage(1);
-        setShowModal(false);
-        setEditingProduct(null);
-        setFormData({
-          productId: null,
-          name: "",
-          price: 0.01,
-          categoryId: "",
-          summary: "",
-          description: "",
-          imageURL: "",
-          isFeatured: false,
-        });
-        setImageFile(null);
-        setImagePreview("");
-      } else {
-        const errorData = await response.json();
-        setError(
-          `Lưu sản phẩm thất bại. ${JSON.stringify(
-            errorData.errors || errorData.message
-          )}`
-        );
-      }
+      await fetchProducts();
+      setPage(1);
+      setShowModal(false);
+      setEditingProduct(null);
+      setFormData({
+        productId: null,
+        name: "",
+        price: 0.01,
+        categoryId: "",
+        brandId: "",
+        summary: "",
+        description: "",
+        imageURL: "",
+        isFeatured: false,
+      });
+      setImageFile(null);
+      setImagePreview("");
     } catch (error) {
-      setError("Lỗi khi lưu sản phẩm: " + error.message);
+      const errorData = error.response?.data?.errors || error.response?.data?.message || error.message;
+      setError(`Lưu sản phẩm thất bại. ${JSON.stringify(errorData)}`);
     }
   };
 
   // Xóa sản phẩm
   const handleDelete = async (productId) => {
     try {
-      const response = await fetch(
-        `https://localhost:7278/Product/${productId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.ok) {
-        await fetchProducts();
-        setPage(1);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Xóa sản phẩm thất bại");
-      }
+      await api.delete(`/Product/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchProducts();
+      setPage(1);
     } catch (error) {
-      setError("Lỗi khi xóa sản phẩm: " + error.message);
+      const errorMessage = error.response?.data?.message || error.message;
+      setError("Xóa sản phẩm thất bại: " + errorMessage);
     }
   };
 
@@ -273,53 +242,33 @@ const ProductManagement = () => {
   const handleImportSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("https://localhost:7278/Stock/import", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: importProductId,
-          quantityChanged: parseInt(importQuantity),
-          note: importNote,
-        }),
+      await api.post("/Stock/import", {
+        productId: importProductId,
+        quantityChanged: parseInt(importQuantity),
+        note: importNote,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        await fetchProducts(); // Làm mới danh sách
-        setShowImportModal(false);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Nhập kho thất bại");
-      }
+      await fetchProducts(); // Làm mới danh sách
+      setShowImportModal(false);
     } catch (error) {
-      setError("Lỗi khi nhập kho: " + error.message);
+      const errorMessage = error.response?.data?.message || "Nhập kho thất bại";
+      setError(errorMessage);
     }
   };
 
   // Chi tiết nhập kho
   const openTransactionsModal = async (productId) => {
     try {
-      const response = await fetch(
-        `https://localhost:7278/Stock/${productId}/transactions`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data || []);
-        setTransactionsProductId(productId);
-        setShowTransactionsModal(true);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Không thể tải chi tiết giao dịch");
-      }
+      const response = await api.get(`/Stock/${productId}/transactions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTransactions(response.data || []);
+      setTransactionsProductId(productId);
+      setShowTransactionsModal(true);
     } catch (error) {
-      setError("Lỗi khi tải chi tiết giao dịch: " + error.message);
+      const errorMessage = error.response?.data?.message || "Lỗi khi tải chi tiết giao dịch";
+      setError(errorMessage);
     }
   };
 
@@ -330,6 +279,7 @@ const ProductManagement = () => {
       name: product.name || "",
       price: product.price || 0.01,
       categoryId: product.categoryId ? product.categoryId.toString() : "",
+      brandId: product.brandId ? product.brandId.toString() : "",
       summary: product.summary || "",
       description: product.description || "",
       imageURL: product.imageURL || "",
@@ -385,6 +335,7 @@ const ProductManagement = () => {
                 name: "",
                 price: 0.01,
                 categoryId: "",
+                brandId: "",
                 summary: "",
                 description: "",
                 imageURL: "",
@@ -607,6 +558,27 @@ const ProductManagement = () => {
                   ))}
                 </select>
               </div>
+              
+              {formData.categoryId && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium">Thương hiệu</label>
+                  <select
+                    value={formData.brandId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, brandId: e.target.value })
+                    }
+                    className="w-full border p-2 rounded"
+                  >
+                    <option value="">Không có thương hiệu / Chọn thương hiệu</option>
+                    {categoryBrands.map((brand) => (
+                      <option key={brand.brandId} value={brand.brandId}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="mb-4">
                 <label className="block text-sm font-medium">Tóm tắt</label>
                 <textarea
@@ -670,6 +642,7 @@ const ProductManagement = () => {
                       name: "",
                       price: 0.01,
                       categoryId: "",
+                      brandId: "",
                       summary: "",
                       description: "",
                       imageURL: "",
@@ -804,3 +777,4 @@ const ProductManagement = () => {
 };
 
 export default ProductManagement;
+

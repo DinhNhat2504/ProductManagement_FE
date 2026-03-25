@@ -3,7 +3,7 @@ import { useState,useEffect,useContext } from "react";
 import { FiX,FiShoppingCart } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
-import Cart from "../Page/Cart";
+import Cart from "../../../pages/Client/Cart";
 const CartNav = () => {
   const [isOpenCarNav, setIsOpenCarNav] = useState(false);
 const { cart } = useContext(CartContext);

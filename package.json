@@ -17,6 +17,7 @@
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
     "@tailwindcss/vite": "^4.1.12",
+    "axios": "^1.13.6",
     "framer-motion": "^12.23.15",
     "lodash": "^4.17.21",
     "react": "^19.1.1",

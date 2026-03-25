@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
+import api from "../../utils/api";
 import { FaUsers, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 
 const UserManagement = () => {
@@ -25,25 +26,16 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-         `https://localhost:7278/api/User/paged?pageNumber=${page}&pageSize=${pageSize}&searchTerm=${encodeURIComponent(
-          search
-        )}`,
+        const response = await api.get(
+          `/api/User/paged?pageNumber=${page}&pageSize=${pageSize}&searchTerm=${encodeURIComponent(search)}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
+            headers: { Authorization: `Bearer ${token}` }
           }
         );
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data.items);
-          setTotalPages(data.totalPages);
-          setTotalItems(data.totalItems);
-        } else {
-          console.error('Failed to fetch users');
-        }
+        const data = response.data;
+        setUsers(data.items);
+        setTotalPages(data.totalPages);
+        setTotalItems(data.totalItems);
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {
@@ -58,22 +50,13 @@ const UserManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`https://localhost:7278/api/User/${editingUser.userId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      await api.put(`/api/User/${editingUser.userId}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        setPage(1); // Reset về trang 1 sau khi sửa
-        setShowModal(false);
-        setEditingUser(null);
-        setFormData({ firstName: '', lastName: '', email: '', role: '' });
-      } else {
-        console.error('Failed to update user');
-      }
+      setPage(1); // Reset về trang 1 sau khi sửa
+      setShowModal(false);
+      setEditingUser(null);
+      setFormData({ firstName: '', lastName: '', email: '', role: '' });
     } catch (error) {
       console.error('Error updating user:', error);
     }
@@ -82,18 +65,10 @@ const UserManagement = () => {
   // Xóa người dùng
   const handleDelete = async (userId) => {
     try {
-      const response = await fetch(`https://localhost:7278/api/User/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      await api.delete(`/api/User/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        setPage(1); // Reset về trang 1 sau khi xóa
-      } else {
-        console.error('Failed to delete user');
-      }
+      setPage(1); // Reset về trang 1 sau khi xóa
     } catch (error) {
       console.error('Error deleting user:', error);
     }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
+import api from "../../utils/api";
+import { getImageUrl } from "../../utils/helpers";
 
 const UserProfile = () => {
   const { isLoggedIn, userId, token, userDetails } = useContext(AuthContext);
@@ -26,65 +28,50 @@ const UserProfile = () => {
       address: userDetails.address,
       phoneNumber: userDetails.phoneNumber,
     });
-    setAvatarPreview(`https://localhost:7278${userDetails.avatarUrl}`);
+    setAvatarPreview(getImageUrl(userDetails.avatarUrl));
 
+    let isMounted = true;
     const fetchAdditionalData = async () => {
       try {
-        const ordersResponse = await fetch(
-          `https://localhost:7278/Order/user/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const ordersData = await ordersResponse.json();
-        setOrders(ordersData);
+        const [ordersResponse, cartResponse] = await Promise.all([
+          api.get(`/Order/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }),
+          api.get(`/Cart/${userId}`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
 
-        const cartResponse = await fetch(
-          `https://localhost:7278/Cart/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const cartData = await cartResponse.json();
-        setCart(cartData);
+        if (isMounted) {
+          const ordersData = ordersResponse.data;
+          setOrders(ordersData);
+          setCart(cartResponse.data);
 
-        const completedOrders = ordersData.filter(
-          (order) => order.orderStatusId === 6
-        ); // Trạng thái thành công là 6
-        const total = completedOrders.reduce(
-          (sum, order) => sum + order.totalPrice,
-          0
-        );
-        setTotalSpent(total);
+          const completedOrders = ordersData.filter(
+            (order) => order.orderStatusId === 6
+          ); // Trạng thái thành công là 6
+          const total = completedOrders.reduce(
+            (sum, order) => sum + order.totalPrice,
+            0
+          );
+          setTotalSpent(total);
+        }
       } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu:", error);
+        if (isMounted) {
+          console.error("Lỗi khi lấy dữ liệu:", error);
+        }
       }
     };
 
     fetchAdditionalData();
+    return () => { isMounted = false; };
   }, [isLoggedIn, userId, token, userDetails]);
 
   const handleUpdate = async (formData) => {
     try {
-      const response = await fetch(
-        `https://localhost:7278/api/User/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-      if (response.ok) {
-        setIsEdit(false);
-        alert("Cập nhật thông tin thành công");
-      } else {
-        const errorData = await response.json();
-        console.error("Lỗi từ server:", errorData);
-      }
+      await api.put(`/api/User/${userId}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsEdit(false);
+      alert("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Lỗi khi cập nhật thông tin:", error);
+      console.error("Lỗi khi cập nhật thông tin:", error.response?.data || error);
     }
   };
 
@@ -352,3 +339,4 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+

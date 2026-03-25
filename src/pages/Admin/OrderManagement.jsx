@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext , useLayoutEffect} from 'react';
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
+import api from "../../utils/api";
 import { FaShoppingCart, FaEdit } from 'react-icons/fa';
 
 const OrderManagement = () => {
@@ -24,23 +25,16 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://localhost:7278/Order/paged?pageNumber=${page}&pageSize=${pageSize}&searchTerm=${encodeURIComponent(search)}&statusId=${status}&paymentId=${paymentId}`,
+      const response = await api.get(
+        `/Order/paged?pageNumber=${page}&pageSize=${pageSize}&searchTerm=${encodeURIComponent(search)}&statusId=${status}&paymentId=${paymentId}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.items);
-        setTotalPages(data.totalPages);
-        setTotalItems(data.totalItems);
-      } else {
-        console.error('Failed to fetch orders');
-      }
+      const data = response.data;
+      setOrders(data.items);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.totalItems);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -51,18 +45,10 @@ const OrderManagement = () => {
   // Lấy danh sách trạng thái đơn hàng
   const fetchStatus = async () => {
     try {
-      const response = await fetch('https://localhost:7278/OrderStatus', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await api.get('/OrderStatus', {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setStatusList(data);
-      } else {
-        console.error('Failed to fetch order statuses');
-      }
+      setStatusList(response.data);
     } catch (error) {
       console.error('Error fetching order statuses:', error);
     }
@@ -71,22 +57,10 @@ const OrderManagement = () => {
   // Lấy danh sách phương thức thanh toán (giả sử API trả về danh sách)
   const fetchPaymentList = async () => {
     try {
-      const response = await fetch('https://localhost:7278/Payment', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await api.get('/Payment', {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setPaymentList(data);
-      } else {
-        setPaymentList([
-          { paymentId: 1, paymentMethod: 'COD' },
-          { paymentId: 2, paymentMethod: 'Chuyển khoản' },
-          { paymentId: 3, paymentMethod: 'Momo' },
-        ]);
-      }
+      setPaymentList(response.data);
     } catch (error) {
       setPaymentList([
         { paymentId: 1, paymentMethod: 'COD' },
@@ -107,22 +81,13 @@ const OrderManagement = () => {
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`https://localhost:7278/Order/${editingOrder.orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderStatusId: parseInt(statusId) }),
+      await api.put(`/Order/${editingOrder.orderId}/status`, { orderStatusId: parseInt(statusId) }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        await fetchOrders();// Reset về trang 1 sau khi cập nhật
-        setShowModal(false);
-        setEditingOrder(null);
-        setStatusId('');
-      } else {
-        console.error('Failed to update order status');
-      }
+      await fetchOrders();// Reset về trang 1 sau khi cập nhật
+      setShowModal(false);
+      setEditingOrder(null);
+      setStatusId('');
     } catch (error) {
       console.error('Error updating order status:', error);
     }

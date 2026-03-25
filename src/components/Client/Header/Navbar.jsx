@@ -4,43 +4,42 @@ import { FiShoppingCart, FiUser, FiMenu, FiX } from "react-icons/fi";
 import CartNav from "./CartNav";
 import AvatarNav from "./AvatarNav";
 import SearchBar from "./SearchBar";
+import api from "../../../utils/api";
 
 const Navbar = () => {
   const [categories, setCategories] = useState([]);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch("https://localhost:7278/Category");
-        if (!response.ok) throw new Error("API call failed");
-        const data = await response.json();
-        setCategories(data);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
-        setCategories([
-          { id: 1, name: "Điện thoại" },
-          { id: 2, name: "Laptop" },
-          { id: 3, name: "Phụ kiện" },
-        ]);
-      }
-    };
-    fetchCategories();
-  }, []);
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       const response = await api.get("/Category");
+  //       setCategories(response.data);
+  //     } catch (error) {
+  //       console.error("Failed to fetch categories:", error);
+  //       setCategories([
+  //         { categoryId: 1, name: "Điện thoại" },
+  //         { categoryId: 2, name: "Laptop" },
+  //         { categoryId: 3, name: "Phụ kiện" },
+  //       ]);
+  //     }
+  //   };
+  //   fetchCategories();
+  // }, []);
 
   // Thêm hiệu ứng khóa scroll của body khi menu mobile mở
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    // Cleanup function để đảm bảo overflow được reset khi component bị unmount
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isMobileMenuOpen]);
+  // useEffect(() => {
+  //   if (isMobileMenuOpen) {
+  //     document.body.style.overflow = "hidden";
+  //   } else {
+  //     document.body.style.overflow = "unset";
+  //   }
+  // Cleanup function để đảm bảo overflow được reset khi component bị unmount
+  //   return () => {
+  //     document.body.style.overflow = "unset";
+  //   };
+  // }, [isMobileMenuOpen]);
 
   return (
     <>
@@ -74,7 +73,7 @@ const Navbar = () => {
               >
                 Sản phẩm
               </Link>
-              <div className="relative group">
+              {/* <div className="relative group">
                 <button className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out flex items-center">
                   Danh mục
                   <svg
@@ -105,7 +104,7 @@ const Navbar = () => {
                     ))}
                   </div>
                 </div>
-              </div>
+              </div> */}
               <Link
                 to="/blog"
                 className="text-gray-700 hover:text-red-500 px-3 py-2 rounded-md text-md font-medium transition duration-150 ease-in-out"
@@ -122,8 +121,8 @@ const Navbar = () => {
 
             <div className="hidden md:flex items-center ">
               {/* <Link to="/cart" className="text-gray-500 hover:text-red-500 transition duration-150 ease-in-out"><FiShoppingCart size={24} /></Link> */}
-               <SearchBar />
-               <div className="m-2"></div>
+              <SearchBar />
+              <div className="m-2"></div>
               <CartNav />
               <div className="m-2"></div>
               <AvatarNav />
@@ -137,7 +136,7 @@ const Navbar = () => {
               >
                 <FiMenu size={26} />
               </button>
-              <SearchBar/>
+              <SearchBar />
               <CartNav />
             </div>
           </div>
@@ -146,16 +145,14 @@ const Navbar = () => {
       {/* ---- PHẦN MENU MOBILE TRƯỢT TỪ BÊN TRÁI (BẮT ĐẦU THAY ĐỔI TỪ ĐÂY) ---- */}
       {/* 1. Lớp nền mờ (Backdrop) */}
       <div
-        className={`fixed inset-0  bg-opacity-50 z-40 transition-opacity duration-300 md:hidden ${
-          isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        }`}
+        className={`fixed inset-0  bg-opacity-50 z-40 transition-opacity duration-300 md:hidden ${isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
         onClick={() => setIsMobileMenuOpen(false)}
       ></div>
       {/* 2. Khung menu trượt */}
       <div
-        className={`fixed top-0 left-0 h-full bg-white shadow-2xl z-50 w-4/5 max-w-sm p-6 transform transition-transform duration-300 ease-in-out md:hidden ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full bg-white shadow-2xl z-50 w-4/5 max-w-sm p-6 transform transition-transform duration-300 ease-in-out md:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Nút đóng menu nằm bên trong */}
         <div className="flex justify-between items-center mb-8">
@@ -192,9 +189,8 @@ const Navbar = () => {
             >
               Danh mục
               <svg
-                className={`w-5 h-5 transition-transform duration-300 ${
-                  isMobileCategoryOpen ? "transform rotate-180" : ""
-                }`}
+                className={`w-5 h-5 transition-transform duration-300 ${isMobileCategoryOpen ? "transform rotate-180" : ""
+                  }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

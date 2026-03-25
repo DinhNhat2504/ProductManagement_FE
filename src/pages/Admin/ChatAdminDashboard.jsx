@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import ChatRoomList from '../Main/ChatRoomList'
-import ChatMessages from '../Main/ChatMessages';
-import { AuthContext } from '../../../context/AuthContext';
+import ChatRoomList from '../../components/Admin/Main/ChatRoomList'
+import ChatMessages from '../../components/Admin/Main/ChatMessages';
+import { AuthContext } from '../../context/AuthContext';
+import api from '../../utils/api';
+
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7278';
 
 const ChatAdminDashboard = () => {
   const { userId, role } = useContext(AuthContext);
@@ -17,7 +20,7 @@ const ChatAdminDashboard = () => {
   useEffect(() => {
     const initConnection = async () => {
       const conn = new HubConnectionBuilder()
-        .withUrl('https://localhost:7278/chatHub', {
+        .withUrl(`${baseURL}/chatHub`, {
           accessTokenFactory: () => localStorage.getItem('token'),
         })
         .configureLogging(LogLevel.Information)
@@ -39,14 +42,12 @@ const ChatAdminDashboard = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await fetch(`https://localhost:7278/Chat/rooms/${userId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        const response = await api.get(`/Chat/rooms/${userId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        if (!response.ok) throw new Error('Failed to fetch rooms');
-        const rooms = await response.json();
-        setChatRooms(rooms);
+        setChatRooms(response.data);
       } catch (err) {
-        console.error('Error fetching rooms:', err);
+        console.error('Error fetching rooms:', err.response?.data || err.message);
       }
     };
 

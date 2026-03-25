@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import api from '../../utils/api';
 
-// Utility function to fetch data using fetch
+// Utility function to fetch data using axios
 const fetchData = async (url, fromDate, toDate) => {
   try {
-    const response = await fetch(`${url}?fromDate=${fromDate}&toDate=${toDate}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
+    const response = await api.get(`${url}?fromDate=${fromDate}&toDate=${toDate}`);
+    const data = response.data;
     return {
       details: data.details.map(item => ({
         date: item.date,
@@ -55,12 +53,12 @@ const StatisticsPage = () => {
       const formattedFrom = formatDate(fromDate);
       const formattedTo = formatDate(toDate);
 
-      setUserData(await fetchData('https://localhost:7278/Statistics/users', formattedFrom, formattedTo));
-      setProductData(await fetchData('https://localhost:7278/Statistics/products', formattedFrom, formattedTo));
-      setOrderData(await fetchData('https://localhost:7278/Statistics/orders', formattedFrom, formattedTo));
-      setImportData(await fetchData('https://localhost:7278/Statistics/import', formattedFrom, formattedTo));
-      setExportData(await fetchData('https://localhost:7278/Statistics/export', formattedFrom, formattedTo));
-      setRevenueData(await fetchData('https://localhost:7278/Statistics/revenue', formattedFrom, formattedTo));
+      setUserData(await fetchData('/Statistics/users', formattedFrom, formattedTo));
+      setProductData(await fetchData('/Statistics/products', formattedFrom, formattedTo));
+      setOrderData(await fetchData('/Statistics/orders', formattedFrom, formattedTo));
+      setImportData(await fetchData('/Statistics/import', formattedFrom, formattedTo));
+      setExportData(await fetchData('/Statistics/export', formattedFrom, formattedTo));
+      setRevenueData(await fetchData('/Statistics/revenue', formattedFrom, formattedTo));
     };
 
     loadData();

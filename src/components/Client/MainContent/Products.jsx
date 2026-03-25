@@ -9,6 +9,7 @@ import { AddToCartButton, BuyNowButton } from "./Button";
 import { Link } from "react-router-dom";
 import Carousel from "react-multi-carousel";
 import "react-multi-carousel/lib/styles.css";
+import { getImageUrl } from "../../../utils/helpers";
 
 function Products({ products, isCarousel, grid }) {
   const [isLiked, setIsLiked] = useState(false);
@@ -42,82 +43,93 @@ function Products({ products, isCarousel, grid }) {
     const items = products.map((product) => (
       <div
         key={product.productId}
-        className={`${
-          isCarousel ? "m-0.5 sm:m-2 sm:mb-4 sm:mt-4 " : "w-full m-0.5 sm:m-2"
-        } bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl relative group`}
+        className={`${isCarousel ? "m-2 sm:my-6 sm:mx-3" : "w-full mb-6"
+          } bg-white rounded-2xl shadow-sm hover:shadow-2xl overflow-hidden transform transition-all duration-500 hover:-translate-y-2 border border-gray-100 relative group flex flex-col`}
       >
         {product.imageURL && (
-          <div className="relative group">
-            <Link to={`/products/${product.productId}`}>
+          <div className="relative overflow-hidden aspect-[4/5] sm:aspect-[3/4]">
+            <Link to={`/products/${product.productId}`} className="block w-full h-full">
               <img
-                src={`https://localhost:7278${product.imageURL}`}
-                alt={product.name} 
-                className="h-48 w-full sm:h-64 object-cover object-center"
+                src={getImageUrl(product.imageURL)}
+                alt={product.name}
+                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
               />
             </Link>
-            <div className="absolute inset-0 bg-[rgba(0,0,0,0.2)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 pointer-events-none">
+
+            {/* Overlay Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+            {/* Badges */}
+            <div className="absolute top-3 left-3 flex flex-col gap-2">
+              {product.isFeatured && (
+                <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider backdrop-blur-sm">
+                  Hot
+                </span>
+              )}
+              <span className="bg-white/90 text-red-600 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm border border-red-100">
+                -10%
+              </span>
+            </div>
+
+            {/* Quick Actions Overflow Wrapper */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 transition-all duration-500 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 flex items-center justify-center gap-3">
               <div className="relative pointer-events-auto">
                 <AddToCartButton
                   product={product}
                   quantity={1}
-                  
-                  classCustom="peer p-3 bg-white rounded-full hover:bg-red-400 transition-all duration-500 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100"
+                  classCustom="peer p-3.5 bg-white/95 backdrop-blur-sm rounded-full hover:bg-red-500 hover:text-white text-gray-800 shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center group/btn focus:outline-none"
                 >
-                  <FaShoppingCart className="w-6 h-6 text-gray-800 hover:text-white" />
-                </AddToCartButton >
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black rounded opacity-0 peer-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                  Thêm vào giỏ hàng
-                </div>
+                  <FaShoppingCart className="w-4 h-4 transition-colors" />
+                </AddToCartButton>
               </div>
+
               <div className="relative pointer-events-auto">
                 <BuyNowButton
                   product={product}
                   quantity={1}
-                  classCustom="peer p-3 bg-white rounded-full hover:bg-red-400 transition-all duration-500 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100"
+                  classCustom="peer py-3.5 px-5 bg-red-500 text-white font-bold rounded-full hover:bg-red-600 shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center text-sm focus:outline-none"
                 >
-                  <FaMoneyBillWave className="w-6 h-6 text-gray-800 hover:text-white" />
+                  Mua Ngay
                 </BuyNowButton>
-
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black rounded opacity-0 peer-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                  Mua ngay
-                </div>
               </div>
             </div>
+
+            {/* Wishlist Heart Top Right
+            <button
+              onClick={(e) => { e.preventDefault(); setIsLiked(!isLiked); }}
+              className={`absolute top-3 right-3 p-2.5 rounded-full backdrop-blur-md shadow-sm transition-all duration-300 z-10 focus:outline-none ${isLiked ? 'bg-white text-red-500' : 'bg-white/70 hover:bg-white text-gray-500 hover:text-red-500'}`}
+              aria-label="Add to wishlist"
+            >
+              {isLiked ? <FaHeart className="w-4 h-4" /> : <FaRegHeart className="w-4 h-4" />}
+            </button> */}
           </div>
         )}
-        <div className="p-4">
-          <h3 className="text-lg font-semibold truncate">{product.name}</h3>
-          <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-            {product.summary}
-          </p>
-          <div className="flex items-center gap-4 mb-4">
-            <span className="text-sm font-bold text-red-500 mt-2">
-              {product.price.toLocaleString("vi-VN")}₫
-            </span>
-            <span className="text-sm text-gray-500 mt-2 line-through">
-              {(product.price + product.price * 0.1).toLocaleString("vi-VN")}₫
-            </span>
-          </div>
 
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex gap-2">
-              {product.isFeatured && (
-                <span className="inline-block bg-red-500 text-yellow-400 font-bold text-xs px-2 py-1 rounded-full mt-2">
-                  Hot
-                </span>
-              )}
+        <div className="p-4 sm:p-5 flex flex-col flex-grow">
+          <Link to={`/products/${product.productId}`}>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 line-clamp-2 hover:text-blue-600 transition-colors leading-snug mb-1">
+              {product.name}
+            </h3>
+          </Link>
+          <p className="text-gray-500 text-xs sm:text-sm line-clamp-1 mb-3">
+            {product.summary || "Sản phẩm chất lượng cao"}
+          </p>
+
+          <div className="mt-auto pt-2 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-base sm:text-lg font-black text-red-500 leading-none">
+                {product.price.toLocaleString("vi-VN")}₫
+              </span>
+              <span className="text-xs text-gray-400 line-through mt-1 font-medium">
+                {(product.price + product.price * 0.1).toLocaleString("vi-VN")}₫
+              </span>
             </div>
-            <button
-              onClick={() => setIsLiked(!isLiked)}
-              className="p-2 rounded-full bg-gray-100 transition-colors duration-300 hover:bg-gray-200 flex items-center gap-2"
-              aria-label={isLiked ? "Remove from wishlist" : "Add to wishlist"}
-            >
-              {isLiked ? (
-                <FaHeart className="w-3 h-3 text-red-500" />
-              ) : (
-                <FaRegHeart className="w-3 h-3 text-gray-600" />
-              )}
-            </button>
+
+            {/* Small star rating display */}
+            {/* <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-md">
+              <FaHeart className="w-2.5 h-2.5 text-yellow-500" />
+              <span className="text-xs font-bold text-yellow-700">4.9</span>
+            </div> */}
           </div>
         </div>
       </div>
@@ -131,20 +143,17 @@ function Products({ products, isCarousel, grid }) {
   }
 
   return (
-    <>
-      <div
-  className={
-    isCarousel
-      ? "w-full bg-indigo-600 rounded-lg"
-      : grid
-      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-5 gap-2 "
-      : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-5 gap-2 "
-  }
->
-
-        {renderContent()}
-      </div>
-    </>
+    <div
+      className={
+        isCarousel
+          ? "w-full bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-3xl p-2 sm:p-4 my-4 border border-indigo-100"
+          : grid
+            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 mt-6"
+            : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-6"
+      }
+    >
+      {renderContent()}
+    </div>
   );
 }
 

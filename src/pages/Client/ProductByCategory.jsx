@@ -1,7 +1,8 @@
 import React from "react";
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import ProductFilter from "../MainContent/ProductFilter";
+import ProductFilter from "../../components/Client/MainContent/ProductFilter";
+import api from "../../utils/api";
 
 export default function ProductByCategory() {
     
@@ -12,9 +13,8 @@ export default function ProductByCategory() {
     useEffect(() => {
     const callProduct = async () => {
         try {
-            const response = await fetch(`https://localhost:7278/Product/category/${categoryId}`);
-            if (!response.ok) throw new Error('Lỗi mạng');
-            const data = await response.json();
+            const response = await api.get(`/Product/category/${categoryId}`);
+            const data = response.data;
             console.log(data);
            
         } catch (error) {
@@ -36,4 +36,5 @@ export default function ProductByCategory() {
         </>
     )
 }
+
 

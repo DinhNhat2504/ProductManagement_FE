@@ -82,6 +82,14 @@ link="/admin/chats"
           link="/admin/products"
         />
         <Option
+          Icon={FiGift}
+          title="Thương hiệu"
+          selected={selected}
+          setSelected={setSelected}
+          open={open}
+          link="/admin/brands"
+        />
+        <Option
           Icon={FiDollarSign}
           title="Đơn hàng"
           selected={selected}

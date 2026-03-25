@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { AuthContext } from "../../../context/AuthContext"; // Giả sử có context cho auth
+import { AuthContext } from "../../context/AuthContext"; // Giả sử có context cho auth
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
@@ -7,6 +7,8 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import CircularProgress from "@mui/material/CircularProgress";
 import { styled } from "@mui/material/styles";
+import api from "../../utils/api";
+import { getImageUrl } from "../../utils/helpers";
 
 const steps = ["Đang xử lý", "Đã xác nhận", "Đang vận chuyển", "Thành công"]; // 4 mức chính, hủy là đặc biệt
 
@@ -54,56 +56,42 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   useEffect(() => {
+    let isMounted = true;
     const fetchOrders = async () => {
       try {
-        const response = await fetch(
-          `https://localhost:7278/Order/user/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (!response.ok) throw new Error("Lỗi khi lấy danh sách đơn hàng");
-        const data = await response.json();
+        const response = await api.get(`/Order/user/${userId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` }
+        });
+        const data = response.data;
 
         // Fetch thông tin sản phẩm cho từng orderItem
         const ordersWithProducts = await Promise.all(
           data.map(async (order) => {
-            const orderItemsWithProducts = await Promise.all(
-              order.orderItems.map(async (item) => {
-                const productResponse = await fetch(
-                  `https://localhost:7278/Product/${item.productId}`,
-                  {
-                    method: "GET",
-                    headers: {
-                      Authorization: `Bearer ${
-                        localStorage.getItem("token") || ""
-                      }`,
-                      "Content-Type": "application/json",
-                    },
+              const orderItemsWithProducts = await Promise.all(
+                order.orderItems.map(async (item) => {
+                  try {
+                    const productResponse = await api.get(`/Product/${item.productId}`, {
+                      headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` }
+                    });
+                    return { ...item, product: productResponse.data };
+                  } catch (err) {
+                    throw new Error(`Lỗi khi lấy sản phẩm ${item.productId}`);
                   }
-                );
-                if (!productResponse.ok)
-                  throw new Error(`Lỗi khi lấy sản phẩm ${item.productId}`);
-                const productData = await productResponse.json();
-                return { ...item, product: productData };
-              })
-            );
+                })
+              );
             return { ...order, orderItems: orderItemsWithProducts };
           })
         );
 
-        setOrders(ordersWithProducts);
+        if (isMounted) setOrders(ordersWithProducts);
       } catch (error) {
-        console.error("Lỗi khi lấy danh sách đơn hàng:", error);
+        if (isMounted) console.error("Lỗi khi lấy danh sách đơn hàng:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     fetchOrders();
+    return () => { isMounted = false; };
   }, [userId]);
 
   // Lọc đơn hàng
@@ -206,7 +194,7 @@ const OrdersPage = () => {
                             <li key={idx} className="text-sm border-b-1 pb-2">
                               {item.product?.imageURL && (
                                 <img
-                                  src={`https://localhost:7278${item.product?.imageURL}`}
+                                  src={getImageUrl(item.product?.imageURL)}
                                   alt={item.product.name}
                                   className="w-12 h-12 object-cover ml-2 inline-block"
                                 />
@@ -311,7 +299,7 @@ const OrdersPage = () => {
                             <li key={idx} className="text-sm border-b-1 pb-2">
                               {item.product?.imageURL && (
                                 <img
-                                  src={`https://localhost:7278${item.product?.imageURL}`}
+                                  src={getImageUrl(item.product?.imageURL)}
                                   alt={item.product.name}
                                   className="w-12 h-12 object-cover ml-2 inline-block"
                                 />
@@ -343,3 +331,4 @@ const OrdersPage = () => {
 };
 
 export default OrdersPage;
+
